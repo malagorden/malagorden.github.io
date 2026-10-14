@@ -8,14 +8,17 @@
   <meta name="theme-color" content="#1f2923">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f2923'/%3E%3Cpath d='M12 29 32 13l20 16v23H38V38H26v14H12Z' fill='%23d6a24c'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    gtag('consent', 'default', {
+      analytics_storage: 'denied',
+      ad_storage: 'denied',
+      ad_user_data: 'denied',
+      ad_personalization: 'denied'
+    });
+  </script>
 </head>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-K83YF4FW00"></script>
-<script>
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', 'G-K83YF4FW00');
-</script>
 <body>
   <a class="skip-link" href="#main">Hoppa till innehållet</a>
 
@@ -26,10 +29,11 @@ gtag('config', 'G-K83YF4FW00');
     </a>
     <button class="menu-button" type="button" aria-expanded="false" aria-controls="main-nav">Meny</button>
     <nav id="main-nav" class="main-nav" aria-label="Huvudmeny">
-      <a href="#tjanster">Tjänster</a>
-      <a href="#arbeten">Våra arbeten</a>
-      <a href="#om">Om oss</a>
-      <a href="#kontakt">Kontakt</a>
+      <a href="index.html#tjanster">Hem</a>
+      <a href="maleri.html">Måleri</a>
+      <a href="mark-fastighet.html">Mark & fastighet</a>
+      <a href="vara-arbeten.html">Våra arbeten</a>
+      <a href="offert.html">Offert</a>
     </nav>
     <a class="header-cta" href="tel:+46720010179">Ring 072-001 01 79</a>
   </header>
@@ -40,11 +44,11 @@ gtag('config', 'G-K83YF4FW00');
       <div class="hero-shade"></div>
       <div class="hero-content">
         <p class="eyebrow">Måleri & fastighetsservice i Värnamo</p>
-        <h1>Nytt liv för hus och hem.</h1>
-        <p>Från noggrant underarbete till ett färdigt resultat du kan vara stolt över.</p>
+        <h1>Måleri och fastighetsservice i Värnamo.</h1>
+        <p>För ditt hus, rum och utemiljö. Vi hjälper privatpersoner, företag och bostadsrättsföreningar med målning, markarbete och underhåll.</p>
         <div class="hero-actions">
-          <a class="button button-primary" href="#kontakt">Begär kostnadsfri offert</a>
-          <a class="button button-ghost" href="#arbeten">Se våra arbeten</a>
+          <a class="button button-primary" href="offert.html">Begär kostnadsfri offert</a>
+          <a class="button button-ghost" href="vara-arbeten.html">Se våra arbeten</a>
         </div>
       </div>
       <div class="hero-note"><span>✓</span> Godkänd för F-skatt</div>
@@ -53,7 +57,7 @@ gtag('config', 'G-K83YF4FW00');
     <section id="tjanster" class="section services">
       <div class="section-heading">
         <p class="eyebrow dark">Det här hjälper vi dig med</p>
-        <h2>Hantverk som håller.</h2>
+        <h2>Vad vill du få gjort?</h2>
         <p>Vi tar hand om både mindre förbättringar och större projekt för privatpersoner, företag och bostadsrättsföreningar.</p>
       </div>
 
@@ -178,7 +182,7 @@ gtag('config', 'G-K83YF4FW00');
   <footer class="site-footer">
     <div class="footer-brand"><strong>Målagården</strong><span>Måleri & fastighetsservice</span></div>
     <p>Värnamo med omnejd · Godkänd för F-skatt</p>
-    <p>© <span id="year">2026</span> Målagården</p>
+    <p>© Målagården</p>
   </footer>
 
   <dialog class="lightbox" aria-label="Förstorad projektbild">
@@ -187,33 +191,14 @@ gtag('config', 'G-K83YF4FW00');
     <p></p>
   </dialog>
 
-  <script>
-    const menuButton = document.querySelector('.menu-button');
-    const nav = document.querySelector('.main-nav');
-    menuButton.addEventListener('click', () => {
-      const open = menuButton.getAttribute('aria-expanded') === 'true';
-      menuButton.setAttribute('aria-expanded', String(!open));
-      nav.classList.toggle('open', !open);
-    });
-    nav.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
-      menuButton.setAttribute('aria-expanded', 'false');
-      nav.classList.remove('open');
-    }));
+  <section class="cookie-banner" id="cookie-banner" aria-label="Cookieval" hidden>
+    <p><strong>Vi använder statistikcookies</strong> för att förstå hur hemsidan används och förbättra den. Du kan välja att godkänna eller avstå.</p>
+    <div class="cookie-actions">
+      <button class="cookie-button secondary" id="cookie-decline" type="button">Avstå</button>
+      <button class="cookie-button" id="cookie-accept" type="button">Godkänn</button>
+    </div>
+  </section>
 
-    const lightbox = document.querySelector('.lightbox');
-    const lightboxImage = lightbox.querySelector('img');
-    const lightboxCaption = lightbox.querySelector('p');
-    document.querySelectorAll('.gallery-item').forEach(item => item.addEventListener('click', () => {
-      lightboxImage.src = item.dataset.image;
-      lightboxImage.alt = item.querySelector('img').alt;
-      lightboxCaption.textContent = item.dataset.caption;
-      lightbox.showModal();
-    }));
-    lightbox.querySelector('.lightbox-close').addEventListener('click', () => lightbox.close());
-    lightbox.addEventListener('click', event => {
-      if (event.target === lightbox) lightbox.close();
-    });
-    document.getElementById('year').textContent = new Date().getFullYear();
-  </script>
+  <script src="site.js" defer></script>
 </body>
 </html>
