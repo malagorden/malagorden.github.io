@@ -93,12 +93,9 @@ h3 { font-size: clamp(1.4rem, 2vw, 2.1rem); }
 .featured .service-number { color: var(--gold-bright); }
 
 .garden-section { background: #edf1ea; }
-.garden-showcase { display: grid; grid-template-columns: 1fr .9fr 1fr; gap: 1rem; align-items: stretch; }
-.garden-showcase > img { width: 100%; height: 100%; min-height: 360px; object-fit: cover; border-radius: 1rem; }
-.garden-copy { display: flex; flex-direction: column; justify-content: center; padding: clamp(1.75rem, 4vw, 3rem); background: var(--cream); border-radius: 1rem; }
-.garden-copy h3 { margin: .25rem 0 1rem; font-size: clamp(1.7rem, 3vw, 2.7rem); line-height: 1.05; }
-.garden-copy p { color: #596159; }
-.garden-copy .text-link { margin-top: 1rem; }
+.garden-offer { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; max-width: 760px; padding: 1.5rem; background: var(--cream); border-radius: 1rem; }
+.garden-offer p { margin: 0; color: #596159; }
+.garden-offer .button { flex: 0 0 auto; }
 
 .work-section { background: var(--forest); color: white; }
 .work-section .section-heading > p:last-child { color: rgba(255,255,255,.7); }
@@ -158,8 +155,8 @@ h3 { font-size: clamp(1.4rem, 2vw, 2.1rem); }
   .hero-shade { background: linear-gradient(0deg, rgba(13,18,15,.92) 0%, rgba(13,18,15,.55) 58%, rgba(13,18,15,.12) 100%); }
   .hero-content { padding-bottom: 5.2rem; }
   .hero-note { left: 1.25rem; right: auto; bottom: 1rem; }
-  .section-heading, .about-section, .contact-section, .garden-showcase { grid-template-columns: 1fr; }
-  .garden-showcase > img { min-height: 280px; }
+  .section-heading, .about-section, .contact-section { grid-template-columns: 1fr; }
+  .garden-offer { align-items: flex-start; flex-direction: column; }
   .service-card { min-height: 420px; }
   .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .site-footer { flex-direction: column; align-items: flex-start; }
