@@ -75,7 +75,7 @@ function renderJobb() {
     if (val.jobb === j.id) inp.checked = true;
     inp.addEventListener('change', () => { val.jobb = j.id; val.underlag = ''; val.delar = []; val.storlek = ''; val.vetEj = false; renderUnderlag(); renderStorlek(); update(); go(2); });
     grid.append(h('label', { class: 'pg-job', for: id }, [inp,
-      h('span', { class: 'pg-job-img' }, [h('img', { src: `${j.bild}-480.webp`, alt: '', loading: 'lazy', width: 480, height: 360 })]),
+      h('span', { class: 'pg-job-img' }, [h('img', { src: `/img/${j.bild}-480.webp`, alt: '', loading: 'lazy', width: 480, height: 360 })]),
       h('span', { class: 'pg-job-t' }, [h('b', { text: j.namn }), h('small', { text: j.kort })])]));
   });
   b.append(grid);
@@ -278,10 +278,33 @@ function renderForm() {
       uppskattning: (() => { const x = uppskatta(PRIS, val); return x ? { fran: x.fran, till: x.till } : null; })(),
       bilder: bilder.map(x => ({ name: x.name, data: x.data })),
     };
+    // GitHub Pages har ingen egen server. FormSubmit skickar därför förfrågan
+    // direkt till Målagårdens e-postadress.
     let r;
-    try { r = await fetch('/api/mg/offert', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) }).then(x => x.json()); }
-    catch { r = { ok: false, fejl: 'Ingen kontakt med servern.' }; }
-    if (r && r.ok) return done(payload);
+    try {
+      const mailPayload = {
+        _subject: 'Ny offertförfrågan från malagorden.se',
+        _template: 'table',
+        _replyto: payload.email || '',
+        namn: payload.namn,
+        telefon: payload.telefon,
+        'kundens e-post': payload.email || 'Ej angiven',
+        'adress eller ort': payload.ort,
+        'typ av arbete': (findJobb(payload.jobb) || {}).namn || 'Ej angivet',
+        underlag: ((findJobb(payload.jobb) || {}).underlag || []).find(x => x.id === payload.underlag)?.t || 'Ej angivet',
+        'vad jobbet gäller': payload.delar.join(', ') || 'Ej angivet',
+        storlek: payload.storlek ? `${payload.storlek} m²` : 'Bedöms på plats',
+        'önskad tid': payload.naar || 'Ej angiven',
+        meddelande: payload.meddelande || 'Inget ytterligare meddelande',
+        'bilder skickas via': payload.bilder.length ? 'WhatsApp eller telefon – bilder kan inte bifogas i detta formulär.' : 'Inga bilder bifogade.'
+      };
+      r = await fetch('https://formsubmit.co/ajax/info@malagorden.se', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(mailPayload)
+      }).then(x => x.ok ? x.json() : Promise.reject(new Error('E-posttjänsten svarade inte.')));
+    } catch { r = { ok: false, fejl: 'Kunde inte skicka förfrågan.' }; }
+    if (r && (r.success === 'true' || r.success === true || r.ok)) return done(payload);
     send.disabled = false; send.textContent = 'Försök skicka igen';
     formErr.append(h('p', { text: (r && r.fejl ? r.fejl + ' ' : '') + 'Du kan också ringa oss eller skicka bilderna på WhatsApp.' }),
       h('div', { class: 'pg-alt' }, [h('a', { class: 'btn btn-line', href: 'tel:+46720010179', text: 'Ring ' + TEL }), h('a', { class: 'btn btn-line', href: WA, target: '_blank', rel: 'noopener', text: 'WhatsApp' }),
