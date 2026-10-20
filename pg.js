@@ -298,7 +298,7 @@ function renderForm() {
         meddelande: payload.meddelande || 'Inget ytterligare meddelande',
         'bilder skickas via': payload.bilder.length ? 'WhatsApp eller telefon – bilder kan inte bifogas i detta formulär.' : 'Inga bilder bifogade.'
       };
-      r = await fetch('https://formsubmit.co/ajax/info@malagorden.se', {
+      r = await fetch('https://formspree.io/f/mbgdvyov', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(mailPayload)
