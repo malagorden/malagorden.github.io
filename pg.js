@@ -75,7 +75,7 @@ function renderJobb() {
     if (val.jobb === j.id) inp.checked = true;
     inp.addEventListener('change', () => { val.jobb = j.id; val.underlag = ''; val.delar = []; val.storlek = ''; val.vetEj = false; renderUnderlag(); renderStorlek(); update(); go(2); });
     grid.append(h('label', { class: 'pg-job', for: id }, [inp,
-      h('span', { class: 'pg-job-img' }, [h('img', { src: `/img/${j.bild}-480.webp`, alt: '', loading: 'lazy', width: 480, height: 360 })]),
+      h('span', { class: 'pg-job-img' }, [h('img', { src: `/${j.bild}-480.webp`, alt: '', loading: 'lazy', width: 480, height: 360 })]),
       h('span', { class: 'pg-job-t' }, [h('b', { text: j.namn }), h('small', { text: j.kort })])]));
   });
   b.append(grid);

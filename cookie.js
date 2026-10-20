@@ -12,7 +12,7 @@
   var gemt = hent();
   if (gemt && gemt.stat) startStat();
 
-  var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'cookie.css'; document.head.appendChild(css);
+  var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/cookie.css'; document.head.appendChild(css);
   var box;
   function luk() { if (box) { box.remove(); box = null; } }
   function vaelg(stat) { gem(stat); if (stat) startStat(); luk(); }
