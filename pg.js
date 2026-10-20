@@ -304,7 +304,7 @@ function renderForm() {
         body: JSON.stringify(mailPayload)
       }).then(x => x.ok ? x.json() : Promise.reject(new Error('E-posttjänsten svarade inte.')));
     } catch { r = { ok: false, fejl: 'Kunde inte skicka förfrågan.' }; }
-    if (r && (r.success === 'true' || r.success === true || r.ok)) return done(payload);
+    if (r && (r.success === 'true' || r.success === true || r.next )) return done(payload);
     send.disabled = false; send.textContent = 'Försök skicka igen';
     formErr.append(h('p', { text: (r && r.fejl ? r.fejl + ' ' : '') + 'Du kan också ringa oss eller skicka bilderna på WhatsApp.' }),
       h('div', { class: 'pg-alt' }, [h('a', { class: 'btn btn-line', href: 'tel:+46720010179', text: 'Ring ' + TEL }), h('a', { class: 'btn btn-line', href: WA, target: '_blank', rel: 'noopener', text: 'WhatsApp' }),
