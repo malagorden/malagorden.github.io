@@ -175,7 +175,7 @@ function renderResultat() {
   } else {
     card.append(h('p', { class: 'pg-eyebrow', text: 'Ditt pris' }),
       h('p', { class: 'pg-price pg-price-txt', text: 'Sätts när vi har sett underlaget.' }),
-      h('p', { class: 'pg-fine', text: 'Det är underlaget som avgör hur mycket arbete jobbet kräver. Skicka gärna några bilder och en kort beskrivning, så återkommer vi för att gå igenom arbetet och lämna en tydlig offert.' }));
+      h('p', { class: 'pg-fine', text: '. Skicka gärna några bilder och en kort beskrivning, så återkommer vi för att gå igenom arbetet och lämna en tydlig offert.' }));
   }
   const why = h('ul', { class: 'pg-why' });
   if (u) why.append(h('li', null, [h('b', { text: 'Underlaget: ' }), u.t + '. ' + u.s]));
