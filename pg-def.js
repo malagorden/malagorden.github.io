@@ -101,25 +101,52 @@ export function rotAvdrag(arbetskostnad, agare = 1) {
   return { avdrag, taket: a * ROT.andel > max, max };
 }
 
+const TIMPRIS = 495; // kr per timme inklusive moms
+
+const TIMMAR_PER_M2 = {
+  invandig: 0.45,
+  utvandig: 0.55,
+  gips: 0.80,
+  golv: 0.45,
+  mark: 1.50
+};
+
+const UNDERLAGSPASLAG = {
+  gott: 0, jamnt: 0,
+  hal: 0.15, flagnar: 0.20, pavaxt: 0.15,
+  ojamn: 0.35, ojamnt: 0.35,
+  tapet: 0.45, nygips: 0.30, nya: 0.30,
+  befintlig: 0.35, skador: 0.25,
+  riva: 0.40, byta: 0.35, satt: 0.50,
+  ny: 0.40, skadat: 0.50
+};
+
 const r500 = n => Math.round(n / 500) * 500;
 
 export function uppskatta(pris, val) {
   const j = jobb(val.jobb);
-  if (!pris || !pris.visa || !j || !j.enhet) return null;
-  const p = pris.jobb && pris.jobb[j.id];
   const m2 = Number(val.storlek);
-  if (!p || !(p.fran > 0) || !(p.till >= p.fran) || !(m2 > 0)) return null;
-  const extra = 1 + ((p.tillagg && Number(p.tillagg[val.underlag])) || 0) / 100;
-  const fran = r500(m2 * p.fran * extra);
-  const till = r500(m2 * p.till * extra);
+  const timmarPerM2 = j && TIMMAR_PER_M2[j.id];
+
+  if (!j || !j.enhet || !timmarPerM2 || !(m2 > 0)) return null;
+
+  const paslag = UNDERLAGSPASLAG[val.underlag] || 0;
+  const arbete = m2 * timmarPerM2 * TIMPRIS * (1 + paslag);
+  const fran = r500(arbete * 0.9);
+  const till = r500(arbete * 1.1);
   const out = { fran, till, rot: null };
   const rot = rotFor(j.id, val.kundtyp);
 
-  if (rot.svar === 'ja' && p.arbete > 0) {
-    const ag = val.agare === 2 ? 2 : 1;
-    const a1 = rotAvdrag(fran * p.arbete / 100, ag);
-    const a2 = rotAvdrag(till * p.arbete / 100, ag);
-    out.rot = { fran: r500(fran - a1.avdrag), till: r500(till - a2.avdrag), taket: a1.taket || a2.taket };
+  if (rot.svar === 'ja') {
+    const agare = val.agare === 2 ? 2 : 1;
+    const a1 = rotAvdrag(fran, agare);
+    const a2 = rotAvdrag(till, agare);
+
+    out.rot = {
+      fran: r500(fran - a1.avdrag),
+      till: r500(till - a2.avdrag),
+      taket: a1.taket || a2.taket
+    };
   }
 
   return out;
