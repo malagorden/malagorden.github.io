@@ -101,7 +101,7 @@ export function rotAvdrag(arbetskostnad, agare = 1) {
   return { avdrag, taket: a * ROT.andel > max, max };
 }
 
-const TIMPRIS = 495; // kr per timme inklusive moms
+const TIMPRIS = 600; // kr per timme inklusive moms
 
 const TIMMAR_PER_M2 = {
   invandig: 0.45,
