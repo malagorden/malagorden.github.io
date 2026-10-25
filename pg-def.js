@@ -113,10 +113,10 @@ const TIMMAR_PER_M2 = {
 
 const UNDERLAGSPASLAG = {
   gott: 0, jamnt: 0,
-  hal: 0.15, flagnar: 0.20, pavaxt: 0.15,
+  hal: 0.25, flagnar: 0.30, pavaxt: 0.15,
   ojamn: 0.35, ojamnt: 0.35,
   tapet: 0.45, nygips: 0.30, nya: 0.30,
-  befintlig: 0.35, skador: 0.25,
+  befintlig: 0.35, skador: 0.35,
   riva: 0.40, byta: 0.35, satt: 0.50,
   ny: 0.40, skadat: 0.50
 };
