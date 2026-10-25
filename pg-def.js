@@ -104,11 +104,11 @@ export function rotAvdrag(arbetskostnad, agare = 1) {
 const TIMPRIS = 600; // kr per timme inklusive moms
 
 const TIMMAR_PER_M2 = {
-  invandig: 0.45,
-  utvandig: 0.55,
-  gips: 0.80,
-  golv: 0.45,
-  mark: 1.50
+  invandig: 0.80,
+  utvandig: 0.62,
+  gips: 0.99,
+  golv: 0.65,
+  mark: 1.65
 };
 
 const UNDERLAGSPASLAG = {
