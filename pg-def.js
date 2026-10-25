@@ -105,7 +105,7 @@ const TIMPRIS = 600; // kr per timme inklusive moms
 
 const TIMMAR_PER_M2 = {
   invandig: 0.80,
-  utvandig: 0.62,
+  utvandig: 0.90,
   gips: 0.90,
   golv: 0.65,
   mark: 1.65
