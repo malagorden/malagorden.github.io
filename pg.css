@@ -149,4 +149,4 @@
 @media (max-width: 860px) { .rot-info { grid-template-columns: 1fr; } }
 @media (max-width: 460px) { .rot-facts { grid-template-columns: 1fr; } }
 .pg-job-t b { hyphens: auto; -webkit-hyphens: auto; overflow-wrap: anywhere; }
-@media (max-width: 1000px) { .pg-side { display: none; } }
+@media (max-width: 1000px) { .pg-sum-go { display: block; } }
