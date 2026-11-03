@@ -185,7 +185,11 @@ function renderResultat() {
   why.append(h('li', null, [h('b', { text: 'Material: ' }), 'Färg, skivor, golv och sten beror på vad du väljer. Det står för sig i offerten.']));
   card.append(h('p', { class: 'pg-label', text: 'Det här påverkar priset' }), why);
   b.append(card);
-  
+  b.append(h('button', {
+  type: 'button',
+  class: 'btn btn-gold pg-sum-go',
+  onclick: () => go(5)
+}, ['Fortsätt – lägg till bilder och skicka offert']));
   // ROT
   const rot = rotFor(val.jobb, val.kundtyp);
   const rc = h('div', { class: 'pg-rot pg-rot-' + rot.svar });
