@@ -187,7 +187,7 @@ function renderResultat() {
   b.append(card);
   b.append(h('button', {
   type: 'button',
-  class: 'btn btn-gold',
+  class: 'btn btn-gold pg-sum-go',
   onclick: () => go(5)
 }, ['Fortsätt – lägg till bilder och skicka offert']));
   // ROT
