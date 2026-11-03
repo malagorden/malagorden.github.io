@@ -296,12 +296,18 @@ function renderForm() {
         storlek: payload.storlek ? `${payload.storlek} m²` : 'Bedöms på plats',
         'önskad tid': payload.naar || 'Ej angiven',
         meddelande: payload.meddelande || 'Inget ytterligare meddelande',
-        'bilder skickas via': payload.bilder.length ? 'WhatsApp eller telefon – bilder kan inte bifogas i detta formulär.' : 'Inga bilder bifogade.'
+      bilder: payload.bilder.length ? `${payload.bilder.length} bild${payload.bilder.length === 1 ? '' : 'er'} bifogade.` : 'Inga bilder bifogade.'
       };
-      r = await fetch('https://formspree.io/f/mbgdvyov', {
+      const formData = new FormData();
+      Object.entries(mailPayload).forEach(([key, value]) => formData.append(key, value));
+      for (const image of payload.bilder) {
+        const blob = await (await fetch(image.data)).blob();
+        formData.append('attachment', new File([blob], image.name, { type: image.type || 'image/jpeg' }));
+      }
+      r = await fetch('https://formsubmit.co/ajax/info@malagorden.se', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(mailPayload)
+        headers: { Accept: 'application/json' },
+        body: formData
       }).then(x => x.ok ? x.json() : Promise.reject(new Error('E-posttjänsten svarade inte.')));
     } catch { r = { ok: false, fejl: 'Kunde inte skicka förfrågan.' }; }
     if (r && (r.success === 'true' || r.success === true || r.next )) return done(payload);
@@ -309,7 +315,7 @@ function renderForm() {
     formErr.append(h('p', { text: (r && r.fejl ? r.fejl + ' ' : '') + 'Du kan också ringa oss eller skicka bilderna på WhatsApp.' }),
       h('div', { class: 'pg-alt' }, [h('a', { class: 'btn btn-line', href: 'tel:+46720010179', text: 'Ring ' + TEL }), h('a', { class: 'btn btn-line', href: WA, target: '_blank', rel: 'noopener', text: 'WhatsApp' }),
         h('button', { type: 'button', class: 'btn btn-line', text: 'Kopiera förfrågan', onclick: ev => { navigator.clipboard && navigator.clipboard.writeText(sammanfattning(payload)).then(() => { ev.target.textContent = 'Kopierad ✓'; }); } })]));
-  });
+  }); CV
   b.append(form);
 }
 function check(inp) {
