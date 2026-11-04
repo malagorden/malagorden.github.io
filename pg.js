@@ -64,7 +64,8 @@ function step(n, title, sub) {
 }
 function lock() {
   const ok1 = !!val.jobb, j = findJobb(val.jobb);
-  const ok2 = ok1 && !!val.underlag;
+  // Garden/service work has no surface choice; let it continue without step 2.
+  const ok2 = ok1 && (val.jobb === 'service' || !!val.underlag);
   const ok3 = ok2 && (!j || !j.enhet || val.vetEj || Number(val.storlek) > 0) && !!val.kundtyp;
   steps[2].box.classList.toggle('locked', !ok1);
   steps[3].box.classList.toggle('locked', !ok2);
@@ -93,7 +94,7 @@ function renderJobb() {
     const id = 'pgj-' + j.id;
     const inp = h('input', { type: 'radio', name: 'pg-jobb', id, value: j.id, class: 'sr' });
     if (val.jobb === j.id) inp.checked = true;
-    inp.addEventListener('change', () => { val.jobb = j.id; val.underlag = ''; val.delar = []; val.storlek = ''; val.vetEj = false; val.rutArbete = ''; renderUnderlag(); renderStorlek(); update(); go(2); });
+    inp.addEventListener('change', () => { val.jobb = j.id; val.underlag = ''; val.delar = []; val.storlek = ''; val.vetEj = false; val.rutArbete = ''; renderUnderlag(); renderStorlek(); update(); go(j.id === 'service' ? 3 : 2); });
     grid.append(h('label', { class: 'pg-job', for: id }, [inp,
       h('span', { class: 'pg-job-img' }, [h('img', { src: `/${j.bild}-480.webp`, alt: '', loading: 'lazy', width: 480, height: 360 })]),
       h('span', { class: 'pg-job-t' }, [h('b', { text: j.namn }), h('small', { text: j.kort })])]));
@@ -105,6 +106,10 @@ function renderJobb() {
 function renderUnderlag() {
   const b = clear(steps[2].body), j = findJobb(val.jobb);
   if (!j) { b.append(h('p', { class: 'pg-hint', text: 'Välj först vad du vill få gjort.' })); return; }
+  if (j.id === 'service') {
+    b.append(h('p', { class: 'pg-hint', text: 'För trädgårds- och fastighetsarbete behöver du inte välja underlag. Beskriv jobbet i nästa steg.' }));
+    return;
+  }
   const grid = h('div', { class: 'pg-opts', role: 'radiogroup', 'aria-labelledby': 'pg-h2' });
   [...j.underlag, { id: 'vetej', t: 'Vet inte', s: 'Skicka bilder, så bedömer vi underlaget åt dig.', ikon: 'vetej' }].forEach(u => {
     const id = 'pgu-' + u.id;
