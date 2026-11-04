@@ -236,15 +236,17 @@ function renderResultat() {
       rc.append(h('div', { class: 'pg-rot-head' }, [h('span', { class: 'pg-rot-badge', text: 'RUT kan gälla' }), h('p', { text: 'Arbetet ska utföras på tomten där bostaden står. Skatteverket prövar villkoren och ditt kvarvarande avdragsutrymme.' })]));
       const p = PRIS.jobb && PRIS.jobb[val.jobb];
       const start = est && p && p.arbete > 0 ? Math.round(((est.fran + est.till) / 2) * p.arbete / 100) : '';
-      rotInput = h('input', { type: 'number', inputmode: 'numeric', min: 0, max: 2000000, step: 100, id: 'pg-arb', class: 'pg-num', value: start, placeholder: 'Belopp från offerten' });
+      rotInput = h('input', { type: 'number', inputmode: 'decimal', min: 0, max: 2000, step: 0.5, id: 'pg-arb', class: 'pg-num', placeholder: 'Ange antal timmar' });
       const out = h('div', { class: 'pg-rot-out', 'aria-live': 'polite' });
       const calc = () => {
         clear(out);
-        const a = Number(rotInput.value);
-        if (!(a > 0)) { out.append(h('p', { class: 'pg-hint', text: 'Skriv arbetskostnaden inklusive moms, så räknar vi ut ett preliminärt RUT-avdrag.' })); return; }
+        const timmar = Number(rotInput.value);
+        if (!(timmar > 0)) { out.append(h('p', { class: 'pg-hint', text: 'Ange ungefär hur många timmar arbetet tar, så räknar vi ut arbetskostnad, RUT-avdrag och kundens summa.' })); return; }
+        const a = Math.round(timmar * 550);
         const brutto = Math.round(a * 0.5);
         const tak = 75000 * (val.agare === 2 ? 2 : 1);
         const avdrag = Math.min(brutto, tak);
+        out.append(h('p', { class: 'pg-hint', text: 'Beräknad arbetskostnad före RUT: ' + kr(a) + ' inkl. moms.' }));
         out.append(h('div', { class: 'pg-rot-nums' }, [
           h('div', null, [h('small', { text: 'Preliminärt RUT-avdrag (50 %)' }), h('b', { class: 'pg-minus', text: '− ' + kr(avdrag) })]),
           h('div', null, [h('small', { text: 'Du betalar för arbetet' }), h('b', { text: kr(a - avdrag) })]),
@@ -253,7 +255,7 @@ function renderResultat() {
         out.append(h('p', { class: 'pg-hint', text: 'RUT räknas bara på arbetskostnaden inklusive moms. Material, maskiner och resor ingår inte. Skatteverket beslutar om det slutliga avdraget.' }));
       };
       rotInput.addEventListener('input', calc);
-      rc.append(h('div', { class: 'pg-rot-calc' }, [h('label', { for: 'pg-arb', text: 'Räkna själv: arbetskostnad i kr inkl. moms' }), h('div', { class: 'pg-numrow' }, [rotInput, h('span', { class: 'pg-unit', text: 'kr' })]), out]));
+      rc.append(h('div', { class: 'pg-rot-calc' }, [h('label', { for: 'pg-arb', text: 'Ungefär hur många arbetstimmar?' }), h('div', { class: 'pg-numrow' }, [rotInput, h('span', { class: 'pg-unit', text: 'tim' })]), out]));
       calc();
     }
     b.append(rc);
