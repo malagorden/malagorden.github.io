@@ -239,27 +239,25 @@ function renderResultat() {
       rc.append(h('div', { class: 'pg-rot-head' }, [h('span', { class: 'pg-rot-badge', text: 'Inget RUT-avdrag för detta arbete' }), h('p', { text: 'Plantering, sten- och plattläggning, murar, uppfarter och bortforsling av trädgårdsavfall ger inte RUT.' })]));
     } else {
       rc.append(h('div', { class: 'pg-rot-head' }, [h('span', { class: 'pg-rot-badge', text: 'RUT kan gälla' }), h('p', { text: 'Arbetet ska utföras på tomten där bostaden står. Skatteverket prövar villkoren och ditt kvarvarande avdragsutrymme.' })]));
-      rotInput = h('input', { type: 'number', inputmode: 'decimal', min: 0.5, max: 2000, step: 0.5, id: 'pg-arb', class: 'pg-num', value: 1, placeholder: 'Ange antal timmar' });
-      const out = h('div', { class: 'pg-rot-out', 'aria-live': 'polite' });
-      const calc = () => {
-        clear(out);
-        const timmar = Number(rotInput.value);
-        if (!(timmar > 0)) { out.append(h('p', { class: 'pg-hint', text: 'Ange ungefär hur många timmar arbetet tar, så räknar vi ut arbetskostnad, RUT-avdrag och kundens summa.' })); return; }
-        const a = Math.round(timmar * 550);
-        const brutto = Math.round(a * 0.5);
+      const p = PRIS.jobb && PRIS.jobb[val.jobb];
+      const arbetsandel = p && Number(p.arbete);
+      if (!est || !(arbeidsandel > 0) || !Number.isFinite(Number(est.fran)) || !Number.isFinite(Number(est.till))) {
+        rc.append(h('p', { class: 'pg-hint', text: 'Det finns inget pris för den här jobbtypen i prisguiden ännu, så RUT-beloppet kan inte räknas automatiskt.' }));
+      } else {
+        const arbetskostnadFran = Math.round(Number(est.fran) * arbetsandel / 100);
+        const arbetskostnadTill = Math.round(Number(est.till) * arbetsandel / 100);
         const tak = 75000 * (val.agare === 2 ? 2 : 1);
-        const avdrag = Math.min(brutto, tak);
-        out.append(h('p', { class: 'pg-hint', text: 'Beräknad arbetskostnad före RUT: ' + kr(a) + ' inkl. moms.' }));
-        out.append(h('div', { class: 'pg-rot-nums' }, [
-          h('div', null, [h('small', { text: 'Preliminärt RUT-avdrag (50 %)' }), h('b', { class: 'pg-minus', text: '− ' + kr(avdrag) })]),
-          h('div', null, [h('small', { text: 'Du betalar för arbetet' }), h('b', { text: kr(a - avdrag) })]),
+        const rutFran = Math.min(Math.round(arbetskostnadFran * 0.5), tak);
+        const rutTill = Math.min(Math.round(arbetskostnadTill * 0.5), tak);
+        rc.append(h('div', { class: 'pg-rot-out', 'aria-live': 'polite' }, [
+          h('p', { class: 'pg-hint', text: `Prisguidens uppskattade arbetskostnad (${arbetsandel} %): ${kr(arbetskostnadFran)} – ${kr(arbetskostnadTill)} inkl. moms.` }),
+          h('div', { class: 'pg-rot-nums' }, [
+            h('div', null, [h('small', { text: 'Preliminärt RUT-avdrag (50 %)' }), h('b', { class: 'pg-minus', text: '− ' + kr(rutFran) + ' – ' + kr(rutTill) })]),
+            h('div', null, [h('small', { text: 'Uppskattat totalpris efter RUT' }), h('b', { text: kr(Number(est.fran) - rutFran) + ' – ' + kr(Number(est.till) - rutTill) })]),
+          ]),
+          h('p', { class: 'pg-hint', text: 'RUT räknas bara på arbetskostnaden. Material, maskiner och resor ingår inte. Tidigare ROT- och RUT-avdrag kan minska utrymmet; Skatteverket beslutar om det slutliga avdraget.' })
         ]));
-        if (avdrag < brutto) out.append(h('p', { class: 'pg-hint', text: 'Beräkningen har begränsats till 75 000 kr per person och år. Tidigare ROT- och RUT-avdrag kan minska ditt kvarvarande utrymme.' }));
-        out.append(h('p', { class: 'pg-hint', text: 'RUT räknas bara på arbetskostnaden inklusive moms. Material, maskiner och resor ingår inte. Skatteverket beslutar om det slutliga avdraget.' }));
-      };
-      rotInput.addEventListener('input', calc);
-      rc.append(h('div', { class: 'pg-rot-calc' }, [h('label', { for: 'pg-arb', text: 'Ungefär hur många arbetstimmar? (exempel: 1 timme)' }), h('p', { class: 'pg-hint', text: 'Exemplet räknas med 550 kr per timme inklusive moms. Ändra antalet timmar för att se en annan uppskattning.' }), h('div', { class: 'pg-numrow' }, [rotInput, h('span', { class: 'pg-unit', text: 'tim' })]), out]));
-      calc();
+      }
     }
     b.append(rc, continueButton);
     return;
