@@ -63,7 +63,18 @@ function lock() {
   steps[5].box.classList.toggle('locked', !ok3);
   [2, 3, 4, 5].forEach(n => { const l = steps[n].box.classList.contains('locked'); steps[n].box.inert = l; steps[n].box.setAttribute('aria-disabled', l ? 'true' : 'false'); });
 }
-const go = n => { const el = steps[n] && steps[n].box; if (!el) return; setTimeout(() => el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }), 60); };
+const go = n => {
+  const el = steps[n] && steps[n].box; if (!el) return;
+  if (n === 5) {
+    // Make the final form open and visible when either quote button is pressed.
+    el.classList.remove('locked');
+    el.inert = false;
+    el.setAttribute('aria-disabled', 'false');
+    steps[5].body.hidden = false;
+    steps[5].body.style.display = 'block';
+  }
+  setTimeout(() => el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }), 60);
+};
 
 /* 1. job */
 function renderJobb() {
@@ -221,105 +232,70 @@ function renderResultat() {
 /* 5. request with photos */
 function renderForm() {
   const b = clear(steps[5].body);
-  const form = h('form', { class: 'pg-form', novalidate: true });
+  const form = h('form', { class: 'pg-form', method: 'POST', action: 'https://formsubmit.co/info@malagorden.se', enctype: 'multipart/form-data', novalidate: true });
+  form.append(
+    h('input', { type: 'hidden', name: '_subject', value: 'Ny offertförfrågan från malagorden.se' }),
+    h('input', { type: 'hidden', name: '_template', value: 'table' }),
+    h('input', { type: 'hidden', name: 'Arbete', id: 'pg-summary-job' }),
+    h('input', { type: 'hidden', name: 'Underlag', id: 'pg-summary-underlag' }),
+    h('input', { type: 'hidden', name: 'Vad jobbet gäller', id: 'pg-summary-parts' }),
+    h('input', { type: 'hidden', name: 'Storlek', id: 'pg-summary-size' }),
+    h('input', { type: 'hidden', name: 'Kundtyp', id: 'pg-summary-customer' }),
+    h('input', { type: 'text', name: '_honey', class: 'hp', tabindex: '-1', autocomplete: 'off', 'aria-hidden': 'true' })
+  );
   const drop = h('label', { class: 'pg-drop', for: 'pg-files' }, [
     h('span', { class: 'pg-drop-ic', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3Z"/><circle cx="12" cy="13" r="3"/></svg>' }),
-    h('b', { text: 'Lägg till bilder på underlaget' }), h('small', { text: 'Ta bilder med mobilen eller välj från datorn. Upp till 6 bilder.' })]);
-  const files = h('input', { type: 'file', id: 'pg-files', accept: 'image/*', multiple: true, class: 'sr' });
-  const thumbs = h('div', { class: 'pg-thumbs' });
-  const status = h('p', { class: 'pg-hint', 'aria-live': 'polite' });
-  const drawThumbs = () => {
-    clear(thumbs);
-    bilder.forEach((im, i) => thumbs.append(h('figure', null, [h('img', { src: im.data, alt: 'Bild ' + (i + 1) }), h('button', { type: 'button', 'aria-label': 'Ta bort bild ' + (i + 1), text: '×', onclick: () => { bilder.splice(i, 1); drawThumbs(); update(); } })])));
-    drop.classList.toggle('has', bilder.length > 0);
-  };
-  const add = async list => {
-    for (const f of [...list]) {
-      if (bilder.length >= 6) { status.textContent = 'Max 6 bilder.'; break; }
-      if (!/^image\//.test(f.type) && !/\.(jpe?g|png|webp|heic|heif)$/i.test(f.name)) continue;
-      status.textContent = 'Förbereder bild …';
-      try { bilder.push(await shrink(f)); status.textContent = ''; }
-      catch { status.textContent = 'En bild kunde inte läsas. Prova att välja den igen, eller skicka den på WhatsApp.'; }
-      drawThumbs(); update();
+    h('b', { text: 'Välj bilder' }), h('small', { text: 'Välj upp till 6 bilder från mobilen eller datorn.' })
+  ]);
+  const files = h('input', { type: 'file', id: 'pg-files', name: 'attachment', accept: 'image/jpeg,image/png,image/webp,image/heic,image/heif', multiple: true, class: 'sr' });
+  const status = h('p', { class: 'pg-hint', 'aria-live': 'polite', text: 'Du kan skicka upp till 6 bilder (max 9 MB sammanlagt).' });
+  files.addEventListener('change', () => {
+    const selected = [...files.files], total = selected.reduce((sum, file) => sum + file.size, 0);
+    status.classList.remove('pg-error');
+    if (selected.length > 6 || total > 9 * 1024 * 1024) {
+      status.textContent = selected.length > 6 ? 'Välj högst 6 bilder.' : 'Bilderna är tillsammans större än 9 MB. Välj färre eller mindre bilder.';
+      status.classList.add('pg-error'); files.value = ''; return;
     }
+    status.textContent = selected.length ? `${selected.length} ${selected.length === 1 ? 'bild vald' : 'bilder valda'}: ${selected.map(file => file.name).join(', ')}` : 'Du kan skicka upp till 6 bilder (max 9 MB sammanlagt).';
+  });
+  const field = (id, label, type, autocomplete) => {
+    const input = h('input', { id, name: type === 'email' ? 'email' : 'name', type, autocomplete, required: true });
+    const error = h('span', { class: 'pg-err', id: id + '-err' });
+    input.setAttribute('aria-describedby', id + '-err');
+    input.addEventListener('blur', () => check(input));
+    return h('div', { class: 'pg-field' }, [h('label', { for: id, text: label }), input, error]);
   };
-  files.addEventListener('change', () => { add(files.files); files.value = ''; });
-  ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
-  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
-  drop.addEventListener('drop', e => add(e.dataTransfer.files));
-
-  const f = (id, label, type, ac, req, extra = {}) => {
-    const inp = h('input', { id, name: id, type, autocomplete: ac, required: req, ...extra });
-    const err = h('span', { class: 'pg-err', id: id + '-err' });
-    inp.setAttribute('aria-describedby', id + '-err');
-    inp.addEventListener('blur', () => check(inp));
-    return h('div', { class: 'pg-field' }, [h('label', { for: id, text: label + (req ? '' : ' (valfritt)') }), inp, err]);
-  };
-  const when = h('div', { class: 'pg-chips', role: 'radiogroup', 'aria-label': 'När vill du ha jobbet gjort?' });
-  let naar = '';
-  ['Så snart som möjligt', 'Inom 3 månader', 'Jag planerar'].forEach(t => when.append(h('button', { type: 'button', class: 'chip', 'aria-pressed': 'false', onclick: e => { naar = t; when.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === e.currentTarget))); } }, [t])));
-  const msg = h('textarea', { id: 'pg-msg', rows: 4, maxlength: 3000, placeholder: 'Något mer vi bör veta? Till exempel färgval, tillgänglighet eller när du är hemma.' });
-  const hp = h('div', { class: 'hp', 'aria-hidden': 'true' }, [h('label', { for: 'pg-web', text: 'Lämna tomt' }), h('input', { id: 'pg-web', name: 'website', tabindex: '-1', autocomplete: 'off' })]);
-  const send = h('button', { type: 'submit', class: 'btn btn-gold pg-send' }, ['Skicka förfrågan till Målagården']);
+  const send = h('button', { type: 'submit', class: 'btn btn-gold pg-send', text: 'Skicka till Målagården' });
   const formErr = h('div', { class: 'pg-formerr', 'aria-live': 'assertive' });
-
-  form.append(h('p', { class: 'pg-label', text: 'Bilder säger mest om underlaget' }), drop, files, thumbs, status,
-    h('div', { class: 'pg-grid2' }, [f('pg-namn', 'Namn', 'text', 'name', true), f('pg-tel', 'Telefon', 'tel', 'tel', true)]),
-    h('div', { class: 'pg-grid2' }, [f('pg-mail', 'E-post', 'email', 'email', false), f('pg-ort', 'Adress eller ort där jobbet ska göras', 'text', 'street-address', true)]),
-    h('p', { class: 'pg-label', text: 'När vill du ha jobbet gjort?' }), when,
-    h('div', { class: 'pg-field' }, [h('label', { for: 'pg-msg', text: 'Meddelande (valfritt)' }), msg]), hp,
+  form.append(
+    h('p', { class: 'pg-label', text: 'Lägg till bilder och fyll i dina uppgifter' }),
+    drop, files, status,
+    h('div', { class: 'pg-grid2' }, [field('pg-namn', 'Namn', 'text', 'name'), field('pg-mail', 'E-post', 'email', 'email')]),
     h('p', { class: 'pg-fine', html: 'Vi använder uppgifterna bara för att svara på din förfrågan. Läs mer i vår <a href="/privatlivspolitik">integritetspolicy</a>.' }),
-    formErr, send);
-  form.addEventListener('submit', async e => {
-    e.preventDefault(); clear(formErr);
-    const bad = [...form.querySelectorAll('input[required]')].filter(i => !check(i));
-    const mail = form.querySelector('#pg-mail'); if (!check(mail)) bad.push(mail);
-    if (bad.length) { bad[0].focus(); return; }
-    send.disabled = true; send.textContent = bilder.length ? `Skickar ${bilder.length} ${bilder.length === 1 ? 'bild' : 'bilder'} …` : 'Skickar …';
-    const payload = {
-      ...val, delar: val.delar, naar, namn: form.querySelector('#pg-namn').value, telefon: form.querySelector('#pg-tel').value, email: mail.value,
-      ort: form.querySelector('#pg-ort').value, meddelande: msg.value, website: form.querySelector('#pg-web').value, t: Date.now() - t0,
-      uppskattning: (() => { const x = uppskatta(PRIS, val); return x ? { fran: x.fran, till: x.till } : null; })(),
-      bilder: bilder.map(x => ({ name: x.name, data: x.data })),
-    };
-    // GitHub Pages har ingen egen server. FormSubmit skickar därför förfrågan
-    // direkt till Målagårdens e-postadress.
-    let r;
-    try {
-      const mailPayload = {
-        _subject: 'Ny offertförfrågan från malagorden.se',
-        _template: 'table',
-        _replyto: payload.email || '',
-        namn: payload.namn,
-        telefon: payload.telefon,
-        'kundens e-post': payload.email || 'Ej angiven',
-        'adress eller ort': payload.ort,
-        'typ av arbete': (findJobb(payload.jobb) || {}).namn || 'Ej angivet',
-        underlag: ((findJobb(payload.jobb) || {}).underlag || []).find(x => x.id === payload.underlag)?.t || 'Ej angivet',
-        'vad jobbet gäller': payload.delar.join(', ') || 'Ej angivet',
-        storlek: payload.storlek ? `${payload.storlek} m²` : 'Bedöms på plats',
-        'önskad tid': payload.naar || 'Ej angiven',
-        meddelande: payload.meddelande || 'Inget ytterligare meddelande',
-      bilder: payload.bilder.length ? `${payload.bilder.length} bild${payload.bilder.length === 1 ? '' : 'er'} bifogade.` : 'Inga bilder bifogade.'
-      };
-      const formData = new FormData();
-      Object.entries(mailPayload).forEach(([key, value]) => formData.append(key, value));
-      for (const image of payload.bilder) {
-        const blob = await (await fetch(image.data)).blob();
-        formData.append('attachment', new File([blob], image.name, { type: image.type || 'image/jpeg' }));
+    formErr, send
+  );
+  form.addEventListener('submit', e => {
+    const job = findJobb(val.jobb);
+    const underlag = job && job.underlag.find(item => item.id === val.underlag);
+    form.querySelector('#pg-summary-job').value = job ? job.namn : 'Ej angivet';
+    form.querySelector('#pg-summary-underlag').value = underlag ? underlag.t : 'Ej angivet';
+    form.querySelector('#pg-summary-parts').value = val.delar.join(', ') || 'Ej angivet';
+    form.querySelector('#pg-summary-size').value = job && job.enhet ? (val.vetEj || !val.storlek ? 'Bedöms på plats' : `${val.storlek} ${job.enhetLang}`) : 'Ej angivet';
+    form.querySelector('#pg-summary-customer').value = (KUNDTYP.find(item => item.id === val.kundtyp) || {}).t || 'Ej angivet';
+    const invalid = [...form.querySelectorAll('input[required]')].filter(input => !check(input));
+    const selected = [...files.files], total = selected.reduce((sum, file) => sum + file.size, 0);
+    if (invalid.length || selected.length > 6 || total > 9 * 1024 * 1024) {
+      e.preventDefault();
+      if (selected.length > 6 || total > 9 * 1024 * 1024) {
+        status.textContent = 'Välj högst 6 bilder som tillsammans är mindre än 9 MB.';
+        status.classList.add('pg-error');
       }
-      r = await fetch('https://formsubmit.co/ajax/info@malagorden.se', {
-        method: 'POST',
-        headers: { Accept: 'application/json' },
-        body: formData
-      }).then(x => x.ok ? x.json() : Promise.reject(new Error('E-posttjänsten svarade inte.')));
-    } catch { r = { ok: false, fejl: 'Kunde inte skicka förfrågan.' }; }
-    if (r && (r.success === 'true' || r.success === true || r.next )) return done(payload);
-    send.disabled = false; send.textContent = 'Försök skicka igen';
-    formErr.append(h('p', { text: (r && r.fejl ? r.fejl + ' ' : '') + 'Du kan också ringa oss eller skicka bilderna på WhatsApp.' }),
-      h('div', { class: 'pg-alt' }, [h('a', { class: 'btn btn-line', href: 'tel:+46720010179', text: 'Ring ' + TEL }), h('a', { class: 'btn btn-line', href: WA, target: '_blank', rel: 'noopener', text: 'WhatsApp' }),
-        h('button', { type: 'button', class: 'btn btn-line', text: 'Kopiera förfrågan', onclick: ev => { navigator.clipboard && navigator.clipboard.writeText(sammanfattning(payload)).then(() => { ev.target.textContent = 'Kopierad ✓'; }); } })]));
-  }); CV
+      if (invalid.length) invalid[0].focus(); else files.focus();
+      return;
+    }
+    send.disabled = true;
+    send.textContent = 'Skickar förfrågan …';
+  });
   b.append(form);
 }
 function check(inp) {
