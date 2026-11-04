@@ -178,15 +178,16 @@ function renderResultat() {
   const est = uppskatta(PRIS, val);
   const card = h('div', { class: 'pg-result' });
   if (est) {
-    card.append(h('p', { class: 'pg-eyebrow', text: 'Ungefärligt pris för ' + j.namn.toLowerCase() }),
+    const kundPris = est.rot || est;
+    card.append(h('p', { class: 'pg-eyebrow', text: (est.rot ? 'Ungefärlig summa du betalar efter ROT för ' : 'Ungefärligt pris för ') + j.namn.toLowerCase() }),
       h('p', { class: 'pg-price' }, [h('span', { 'data-v': 0, class: 'pg-a' }), h('span', { class: 'pg-dash', text: ' – ' }), h('span', { 'data-v': 0, class: 'pg-b' })]));
-    if (est.rot) card.append(h('p', { class: 'pg-after' }, ['Efter ROT-avdrag ca ', h('b', { text: kr(est.rot.fran) + ' – ' + kr(est.rot.till) }), est.rot.taket ? ' (taket på ROT-avdraget är nått)' : '']));
+    if (est.rot) card.append(h('p', { class: 'pg-after' }, ['Ordinarie pris före ROT inkl. moms ca ', h('b', { text: kr(est.fran) + ' – ' + kr(est.till) }), est.rot.taket ? ' (taket på ROT-avdraget är nått)' : '']));
     card.append(h('p', { class: 'pg-fine', text: 'Ett riktpris från Målagårdens egna priser, inklusive moms. Det exakta priset står i offerten, när vi har sett underlaget.' }));
-    requestAnimationFrame(() => { countTo(card.querySelector('.pg-a'), est.fran); countTo(card.querySelector('.pg-b'), est.till); });
+    requestAnimationFrame(() => { countTo(card.querySelector('.pg-a'), kundPris.fran); countTo(card.querySelector('.pg-b'), kundPris.till); });
   } else {
     card.append(h('p', { class: 'pg-eyebrow', text: 'Ditt pris' }),
       h('p', { class: 'pg-price pg-price-txt', text: 'Sätts när vi har sett underlaget.' }),
-      h('p', { class: 'pg-fine', text: '. Skicka gärna några bilder och en kort beskrivning, så återkommer vi för att gå igenom arbetet och lämna en tydlig offert.' }));
+      h('p', { class: 'pg-fine', text: 'Skicka gärna några bilder och en kort beskrivning, så återkommer vi för att gå igenom arbetet och lämna en tydlig offert.' }));
   }
   const why = h('ul', { class: 'pg-why' });
   if (u) why.append(h('li', null, [h('b', { text: 'Underlaget: ' }), u.t + '. ' + u.s]));
@@ -377,7 +378,10 @@ function update() {
   rows.forEach(([a, b]) => dl.append(h('div', { class: b ? 'on' : '' }, [h('dt', { text: a }), h('dd', { text: b || '–' })])));
   sumEl.append(dl);
   const est = uppskatta(PRIS, val);
-  if (est) sumEl.append(h('p', { class: 'pg-sum-price' }, [h('small', { text: 'Riktpris' }), h('b', { text: kr(est.fran) + ' – ' + kr(est.till) })]));
+  if (est) {
+    const kundPris = est.rot || est;
+    sumEl.append(h('p', { class: 'pg-sum-price' }, [h('small', { text: est.rot ? 'Efter ROT' : 'Riktpris' }), h('b', { text: kr(kundPris.fran) + ' – ' + kr(kundPris.till) })]));
+  }
   const next = !val.jobb ? 1 : !val.underlag ? 2 : steps[4].box.classList.contains('locked') ? 3 : 5;
   sumEl.append(h('a', { class: 'btn btn-gold pg-sum-go', href: '#pg-h' + next, onclick: e => { e.preventDefault(); go(next); } }, [next === 5 ? 'Skicka med bilder' : 'Fortsätt till steg ' + next]));
 }
