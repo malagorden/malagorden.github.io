@@ -1,6 +1,6 @@
 /* Målagården — Prisguiden ("Underlaget avgör priset").
    Jobb → underlag → storlek → vem är du → resultat (Målagårdens egna priser om de visas, annars "pris efter att vi sett underlaget")
-   → ROT-räknare (Skatteverkets regler) → förfrågan med bilder till Kontrolpanelen (/api/mg/offert).
+   → ROT- eller RUT-räknare (Skatteverkets regler) → förfrågan med bilder till Kontrollpanelen (/api/mg/offert).
    Inga priser finns i koden: de hämtas från /api/mg/priser, där Målagården själva fyller i dem. */
 import { JOBB, KUNDTYP, jobb as findJobb, rotFor, rotAvdrag, uppskatta, kr, tomPris, ROT } from './pg-def.js';
 
@@ -8,7 +8,16 @@ const root = document.getElementById('pg'), sumEl = document.getElementById('pg-
 const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TEL = '072-001 01 79', WA = 'https://wa.me/46720010179';
 let PRIS = tomPris();
-const val = { jobb: '', underlag: '', delar: [], storlek: '', vetEj: false, kundtyp: '', agare: 1, beskrivning: '' };
+const val = { jobb: '', underlag: '', delar: [], storlek: '', vetEj: false, kundtyp: '', agare: 1, beskrivning: '', rutArbete: '' };
+const RUT_ARBETEN = [
+  ['klippning', 'Klippa gräs, häck, rosor eller buskar'],
+  ['rensning', 'Krattning, ogräsrensning eller mossbekämpning'],
+  ['trad', 'Beskära eller fälla träd, ta bort stubbar eller röja sly'],
+  ['ved', 'Kapa eller klyva ved från träd på tomten'],
+  ['insamling', 'Samla ihop trädgårdsavfall på tomten inför bortforsling'],
+  ['jord', 'Fylla jord och så gräs där träd eller buskar tagits bort'],
+  ['land', 'Gräva om trädgårdsland eller kompost'],
+];
 const bilder = []; // { name, type, data (dataURL), w, h }
 const t0 = Date.now();
 
@@ -84,7 +93,7 @@ function renderJobb() {
     const id = 'pgj-' + j.id;
     const inp = h('input', { type: 'radio', name: 'pg-jobb', id, value: j.id, class: 'sr' });
     if (val.jobb === j.id) inp.checked = true;
-    inp.addEventListener('change', () => { val.jobb = j.id; val.underlag = ''; val.delar = []; val.storlek = ''; val.vetEj = false; renderUnderlag(); renderStorlek(); update(); go(2); });
+    inp.addEventListener('change', () => { val.jobb = j.id; val.underlag = ''; val.delar = []; val.storlek = ''; val.vetEj = false; val.rutArbete = ''; renderUnderlag(); renderStorlek(); update(); go(2); });
     grid.append(h('label', { class: 'pg-job', for: id }, [inp,
       h('span', { class: 'pg-job-img' }, [h('img', { src: `/${j.bild}-480.webp`, alt: '', loading: 'lazy', width: 480, height: 360 })]),
       h('span', { class: 'pg-job-t' }, [h('b', { text: j.namn }), h('small', { text: j.kort })])]));
@@ -140,6 +149,16 @@ function renderStorlek() {
     ta.value = val.beskrivning;
     ta.addEventListener('input', () => { val.beskrivning = ta.value; update(); });
     b.append(h('div', { class: 'pg-field' }, [h('label', { for: 'pg-besk', text: 'Beskriv kort vad du behöver hjälp med' }), ta]));
+    if (j.id === 'service') {
+      const sel = h('select', { id: 'pg-rut-arbete', class: 'pg-num' });
+      sel.append(h('option', { value: '', text: 'Välj typ av trädgårdsarbete' }));
+      RUT_ARBETEN.forEach(([id, title]) => sel.append(h('option', { value: id, text: title })));
+      sel.append(h('option', { value: 'annat', text: 'Annat arbete, till exempel plantering eller markarbete' }));
+      sel.value = val.rutArbete;
+      sel.addEventListener('change', () => { val.rutArbete = sel.value; update(); });
+      b.append(h('div', { class: 'pg-field' }, [h('label', { for: 'pg-rut-arbete', text: 'Vilket trädgårdsarbete gäller det?' }), sel,
+        h('p', { class: 'pg-hint', text: 'RUT gäller bara vissa arbeten på tomten där bostaden står. Vi frågar detta för att inte räkna avdrag på till exempel plantering, stenläggning eller murar.' })]));
+    }
   }
   b.append(h('p', { class: 'pg-label', text: 'Vem är du?' }));
   const kt = h('div', { class: 'pg-kund', role: 'radiogroup', 'aria-label': 'Vem är du?' });
@@ -155,14 +174,15 @@ function renderStorlek() {
 }
 function renderAgare() {
   const el = document.getElementById('pg-agare'); if (!el) return; clear(el);
-  if (rotFor(val.jobb, val.kundtyp).svar !== 'ja') return;
-  el.append(h('p', { class: 'pg-label', text: 'Hur många äger bostaden?' }));
+  const rutPrivat = val.jobb === 'service' && val.kundtyp === 'privat';
+  if (!rutPrivat && rotFor(val.jobb, val.kundtyp).svar !== 'ja') return;
+  el.append(h('p', { class: 'pg-label', text: rutPrivat ? 'Hur många personer delar på arbetskostnaden?' : 'Hur många äger bostaden?' }));
   const row = h('div', { class: 'pg-chips' });
-  [1, 2].forEach(n => row.append(h('button', { type: 'button', class: 'chip', 'aria-pressed': String(val.agare === n), onclick: () => { val.agare = n; row.querySelectorAll('button').forEach((x, i) => x.setAttribute('aria-pressed', String(i + 1 === n))); update(); } }, [n === 1 ? 'En ägare' : 'Två ägare'])));
-  el.append(row, h('p', { class: 'pg-hint', text: 'ROT-avdraget är högst 50 000 kr per person och år. Är ni två ägare kan ni dela på avdraget.' }));
+  [1, 2].forEach(n => row.append(h('button', { type: 'button', class: 'chip', 'aria-pressed': String(val.agare === n), onclick: () => { val.agare = n; row.querySelectorAll('button').forEach((x, i) => x.setAttribute('aria-pressed', String(i + 1 === n))); update(); } }, [rutPrivat ? (n === 1 ? 'En person' : 'Två personer') : (n === 1 ? 'En ägare' : 'Två ägare')])));
+  el.append(row, h('p', { class: 'pg-hint', text: rutPrivat ? 'RUT och ROT är tillsammans högst 75 000 kr per person och år. Två personer kan ha varsitt utrymme om båda uppfyller villkoren.' : 'ROT-avdraget är högst 50 000 kr per person och år. Är ni två ägare kan ni dela på avdraget.' }));
 }
 
-/* 4. result + ROT calculator */
+/* 4. result + ROT/RUT calculator */
 let rotInput = null;
 function countTo(el, to) {
   if (reduce) { el.textContent = kr(to); return; }
@@ -202,6 +222,43 @@ function renderResultat() {
   class: 'btn btn-gold pg-sum-go',
   onclick: () => go(5)
 }, ['Fortsätt – lägg till bilder och skicka offert']));
+  // Garden jobs use RUT only when a specific eligible activity is selected for a private customer.
+  if (val.jobb === 'service') {
+    const rutOK = RUT_ARBETEN.some(([id]) => id === val.rutArbete);
+    const rc = h('div', { class: 'pg-rot pg-rot-' + (rutOK && val.kundtyp === 'privat' ? 'ja' : 'nej') });
+    if (val.kundtyp !== 'privat') {
+      rc.append(h('div', { class: 'pg-rot-head' }, [h('span', { class: 'pg-rot-badge', text: 'RUT gäller privatpersoner' }), h('p', { text: 'Företag och BRF kan inte få RUT-avdrag.' })]));
+    } else if (!val.rutArbete) {
+      rc.append(h('div', { class: 'pg-rot-head' }, [h('span', { class: 'pg-rot-badge', text: 'Välj trädgårdsarbete' }), h('p', { text: 'Välj typen av arbete ovan så visar vi om RUT kan räknas.' })]));
+    } else if (!rutOK) {
+      rc.append(h('div', { class: 'pg-rot-head' }, [h('span', { class: 'pg-rot-badge', text: 'Inget RUT-avdrag för detta arbete' }), h('p', { text: 'Plantering, sten- och plattläggning, murar, uppfarter och bortforsling av trädgårdsavfall ger inte RUT.' })]));
+    } else {
+      rc.append(h('div', { class: 'pg-rot-head' }, [h('span', { class: 'pg-rot-badge', text: 'RUT kan gälla' }), h('p', { text: 'Arbetet ska utföras på tomten där bostaden står. Skatteverket prövar villkoren och ditt kvarvarande avdragsutrymme.' })]));
+      const p = PRIS.jobb && PRIS.jobb[val.jobb];
+      const start = est && p && p.arbete > 0 ? Math.round(((est.fran + est.till) / 2) * p.arbete / 100) : '';
+      rotInput = h('input', { type: 'number', inputmode: 'numeric', min: 0, max: 2000000, step: 100, id: 'pg-arb', class: 'pg-num', value: start, placeholder: 'Belopp från offerten' });
+      const out = h('div', { class: 'pg-rot-out', 'aria-live': 'polite' });
+      const calc = () => {
+        clear(out);
+        const a = Number(rotInput.value);
+        if (!(a > 0)) { out.append(h('p', { class: 'pg-hint', text: 'Skriv arbetskostnaden inklusive moms, så räknar vi ut ett preliminärt RUT-avdrag.' })); return; }
+        const brutto = Math.round(a * 0.5);
+        const tak = 75000 * (val.agare === 2 ? 2 : 1);
+        const avdrag = Math.min(brutto, tak);
+        out.append(h('div', { class: 'pg-rot-nums' }, [
+          h('div', null, [h('small', { text: 'Preliminärt RUT-avdrag (50 %)' }), h('b', { class: 'pg-minus', text: '− ' + kr(avdrag) })]),
+          h('div', null, [h('small', { text: 'Du betalar för arbetet' }), h('b', { text: kr(a - avdrag) })]),
+        ]));
+        if (avdrag < brutto) out.append(h('p', { class: 'pg-hint', text: 'Beräkningen har begränsats till 75 000 kr per person och år. Tidigare ROT- och RUT-avdrag kan minska ditt kvarvarande utrymme.' }));
+        out.append(h('p', { class: 'pg-hint', text: 'RUT räknas bara på arbetskostnaden inklusive moms. Material, maskiner och resor ingår inte. Skatteverket beslutar om det slutliga avdraget.' }));
+      };
+      rotInput.addEventListener('input', calc);
+      rc.append(h('div', { class: 'pg-rot-calc' }, [h('label', { for: 'pg-arb', text: 'Räkna själv: arbetskostnad i kr inkl. moms' }), h('div', { class: 'pg-numrow' }, [rotInput, h('span', { class: 'pg-unit', text: 'kr' })]), out]));
+      calc();
+    }
+    b.append(rc);
+    return;
+  }
   // ROT
   const rot = rotFor(val.jobb, val.kundtyp);
   const rc = h('div', { class: 'pg-rot pg-rot-' + rot.svar });
@@ -283,7 +340,9 @@ function renderForm() {
     const underlag = job && job.underlag.find(item => item.id === val.underlag);
     form.querySelector('#pg-summary-job').value = job ? job.namn : 'Ej angivet';
     form.querySelector('#pg-summary-underlag').value = underlag ? underlag.t : 'Ej angivet';
-    form.querySelector('#pg-summary-parts').value = val.delar.join(', ') || 'Ej angivet';
+    const rutNamn = RUT_ARBETEN.find(([id]) => id === val.rutArbete)?.[1];
+    const jobbInfo = [rutNamn || (val.jobb === 'service' && val.rutArbete === 'annat' ? 'Annat trädgårds-/fastighetsarbete' : ''), val.beskrivning].filter(Boolean).join(' — ');
+    form.querySelector('#pg-summary-parts').value = val.jobb === 'service' ? (jobbInfo || 'Trädgårds-/fastighetsarbete, specificeras i offerten') : val.delar.join(', ') || 'Ej angivet';
     form.querySelector('#pg-summary-size').value = job && job.enhet ? (val.vetEj || !val.storlek ? 'Bedöms på plats' : `${val.storlek} ${job.enhetLang}`) : 'Ej angivet';
     form.querySelector('#pg-summary-customer').value = (KUNDTYP.find(item => item.id === val.kundtyp) || {}).t || 'Ej angivet';
     const invalid = [...form.querySelectorAll('input[required]')].filter(input => !check(input));
@@ -390,7 +449,7 @@ function update() {
     ['Jobb', j ? j.namn : null], ['Underlag', u ? u.t : val.underlag === 'vetej' ? 'Vet inte, bedöms från bilder' : null],
     ['Gäller', val.delar.length ? val.delar.join(', ') : null],
     ['Storlek', j && j.enhet ? (val.vetEj ? 'Mäts på plats' : Number(val.storlek) > 0 ? `${Number(val.storlek)} ${j.enhetLang}` : null) : (val.beskrivning ? 'Beskrivning finns' : null)],
-    ['Kund', k ? k.t : null], ['ROT', val.jobb && val.kundtyp ? ({ ja: 'Gäller', nej: 'Gäller inte', kanske: 'Vi återkommer' })[rotFor(val.jobb, val.kundtyp).svar] : null],
+    ['Kund', k ? k.t : null], [val.jobb === 'service' ? 'RUT' : 'ROT', val.jobb && val.kundtyp ? (val.jobb === 'service' ? (val.kundtyp !== 'privat' ? 'Gäller inte för företag/BRF' : RUT_ARBETEN.some(([id]) => id === val.rutArbete) ? 'Kan gälla' : val.rutArbete === 'annat' ? 'Gäller inte för valt arbete' : 'Välj arbetstyp') : ({ ja: 'Gäller', nej: 'Gäller inte', kanske: 'Vi återkommer' })[rotFor(val.jobb, val.kundtyp).svar]) : null],
     ['Bilder', bilder.length ? String(bilder.length) : null],
   ];
   const dl = h('dl');
