@@ -232,7 +232,7 @@ function renderResultat() {
 /* 5. request with photos */
 function renderForm() {
   const b = clear(steps[5].body);
-  const form = h('form', { class: 'pg-form', method: 'POST', action: 'https://usebasin.com/f/e68ba0f96318', enctype: 'multipart/form-data', novalidate: true });
+  const form = h('form', { class: 'pg-form', method: 'POST', action: 'https://usebasin.com/f/e68ba0f96318', enctype: 'multipart/form-data', novalidate: true, 'data-basin-form': true, 'data-basin-success-action': 'render', 'data-basin-success-id': 'pg-basin-success', 'data-basin-error-id': 'pg-basin-error' });
   form.append(
     h('input', { type: 'hidden', name: '_subject', value: 'Ny offertförfrågan från malagorden.se' }),
     h('input', { type: 'hidden', name: '_template', value: 'table' }),
@@ -296,7 +296,20 @@ function renderForm() {
     send.disabled = true;
     send.textContent = 'Skickar förfrågan …';
   });
-  b.append(form);
+  const success = h('section', { id: 'pg-basin-success', class: 'pg-done w-form-done', tabindex: '-1', style: 'display:none' }, [
+    h('span', { class: 'pg-done-ic', text: '✓' }),
+    h('h2', { text: 'Tack för din förfrågan!' }),
+    h('p', { class: 'lead', text: 'Vi har fått dina uppgifter och bilder. Målagården återkommer så snart som möjligt.' })
+  ]);
+  const failure = h('div', { id: 'pg-basin-error', class: 'pg-formerr w-form-fail', style: 'display:none' }, [h('p', { text: 'Något gick fel när förfrågan skulle skickas. Prova igen eller ring oss på 072-001 01 79.' })]);
+  document.addEventListener('basinjsFormSuccess', event => {
+    if (event.detail.form !== form) return;
+    form.style.display = 'none';
+    success.focus();
+    success.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  });
+  b.append(form, success, failure);
+  if (window.Basin && typeof window.Basin.init === 'function') window.Basin.init();
 }
 function check(inp) {
   const err = document.getElementById(inp.id + '-err'); let m = '';
