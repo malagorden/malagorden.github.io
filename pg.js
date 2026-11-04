@@ -275,7 +275,10 @@ function renderForm() {
     h('p', { class: 'pg-fine', html: 'Vi använder uppgifterna bara för att svara på din förfrågan. Läs mer i vår <a href="/privatlivspolitik">integritetspolicy</a>.' }),
     formErr, send
   );
-  form.addEventListener('submit', e => {
+  form.addEventListener('submit', async e => {
+    // Send in the background so the customer stays on Målagården's page.
+    e.preventDefault();
+    e.stopImmediatePropagation();
     const job = findJobb(val.jobb);
     const underlag = job && job.underlag.find(item => item.id === val.underlag);
     form.querySelector('#pg-summary-job').value = job ? job.namn : 'Ej angivet';
@@ -286,7 +289,6 @@ function renderForm() {
     const invalid = [...form.querySelectorAll('input[required]')].filter(input => !check(input));
     const selected = [...files.files], total = selected.reduce((sum, file) => sum + file.size, 0);
     if (invalid.length || selected.length > 6 || total > 9 * 1024 * 1024) {
-      e.preventDefault();
       if (selected.length > 6 || total > 9 * 1024 * 1024) {
         status.textContent = 'Välj högst 6 bilder som tillsammans är mindre än 9 MB.';
         status.classList.add('pg-error');
@@ -296,7 +298,24 @@ function renderForm() {
     }
     send.disabled = true;
     send.textContent = 'Skickar förfrågan …';
-  });
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { accept: 'application/json' }
+      });
+      if (!response.ok) throw new Error('Kunde inte skicka formuläret');
+      form.style.display = 'none';
+      success.style.display = 'block';
+      success.focus();
+      success.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    } catch (error) {
+      send.disabled = false;
+      send.textContent = 'Skicka till Målagården';
+      failure.style.display = 'block';
+      failure.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    }
+  }, true);
   const success = h('section', { id: 'pg-basin-success', class: 'pg-done w-form-done', tabindex: '-1', style: 'display:none' }, [
     h('span', { class: 'pg-done-ic', text: '✓' }),
     h('h2', { text: 'Tack för din förfrågan!' }),
@@ -310,7 +329,7 @@ function renderForm() {
     success.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
   });
   b.append(form, success, failure);
-  if (window.Basin && typeof window.Basin.init === 'function') window.Basin.init();
+  // The form uses fetch above, which avoids UseBasin's own confirmation page.
 }
 function check(inp) {
   const err = document.getElementById(inp.id + '-err'); let m = '';
