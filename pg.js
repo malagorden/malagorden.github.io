@@ -18,6 +18,7 @@ const RUT_ARBETEN = [
   ['jord', 'Fylla jord och så gräs där träd eller buskar tagits bort'],
   ['land', 'Gräva om trädgårdsland eller kompost'],
 ];
+const RUT_TIMPRIS = 525; // kr/timme inklusive moms
 const bilder = []; // { name, type, data (dataURL), w, h }
 const t0 = Date.now();
 
@@ -32,6 +33,7 @@ function h(tag, attrs, kids) {
   return el;
 }
 const clear = el => { while (el.firstChild) el.removeChild(el.firstChild); return el; };
+const kr2 = n => new Intl.NumberFormat('sv-SE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) + ' kr';
 
 /* ---------- small illustrations of the surface ("underlag") ---------- */
 const S = (inner) => `<svg viewBox="0 0 72 52" aria-hidden="true"><rect x="2" y="2" width="68" height="48" rx="6" fill="var(--bg2)" stroke="var(--line)"/>${inner}</svg>`;
@@ -239,25 +241,15 @@ function renderResultat() {
       rc.append(h('div', { class: 'pg-rot-head' }, [h('span', { class: 'pg-rot-badge', text: 'Inget RUT-avdrag för detta arbete' }), h('p', { text: 'Plantering, sten- och plattläggning, murar, uppfarter och bortforsling av trädgårdsavfall ger inte RUT.' })]));
     } else {
       rc.append(h('div', { class: 'pg-rot-head' }, [h('span', { class: 'pg-rot-badge', text: 'RUT kan gälla' }), h('p', { text: 'Arbetet ska utföras på tomten där bostaden står. Skatteverket prövar villkoren och ditt kvarvarande avdragsutrymme.' })]));
-      const p = PRIS.jobb && PRIS.jobb[val.jobb];
-      const arbetsandel = p && Number(p.arbete);
-      if (!est || !(arbeidsandel > 0) || !Number.isFinite(Number(est.fran)) || !Number.isFinite(Number(est.till))) {
-        rc.append(h('p', { class: 'pg-hint', text: 'Det finns inget pris för den här jobbtypen i prisguiden ännu, så RUT-beloppet kan inte räknas automatiskt.' }));
-      } else {
-        const arbetskostnadFran = Math.round(Number(est.fran) * arbetsandel / 100);
-        const arbetskostnadTill = Math.round(Number(est.till) * arbetsandel / 100);
-        const tak = 75000 * (val.agare === 2 ? 2 : 1);
-        const rutFran = Math.min(Math.round(arbetskostnadFran * 0.5), tak);
-        const rutTill = Math.min(Math.round(arbetskostnadTill * 0.5), tak);
-        rc.append(h('div', { class: 'pg-rot-out', 'aria-live': 'polite' }, [
-          h('p', { class: 'pg-hint', text: `Prisguidens uppskattade arbetskostnad (${arbetsandel} %): ${kr(arbetskostnadFran)} – ${kr(arbetskostnadTill)} inkl. moms.` }),
-          h('div', { class: 'pg-rot-nums' }, [
-            h('div', null, [h('small', { text: 'Preliminärt RUT-avdrag (50 %)' }), h('b', { class: 'pg-minus', text: '− ' + kr(rutFran) + ' – ' + kr(rutTill) })]),
-            h('div', null, [h('small', { text: 'Uppskattat totalpris efter RUT' }), h('b', { text: kr(Number(est.fran) - rutFran) + ' – ' + kr(Number(est.till) - rutTill) })]),
-          ]),
-          h('p', { class: 'pg-hint', text: 'RUT räknas bara på arbetskostnaden. Material, maskiner och resor ingår inte. Tidigare ROT- och RUT-avdrag kan minska utrymmet; Skatteverket beslutar om det slutliga avdraget.' })
-        ]));
-      }
+      const rutPerTimme = RUT_TIMPRIS * 0.5;
+      rc.append(h('div', { class: 'pg-rot-out', 'aria-live': 'polite' }, [
+        h('div', { class: 'pg-rot-nums' }, [
+          h('div', null, [h('small', { text: 'Riktpris före RUT, per arbetstimme' }), h('b', { text: kr(RUT_TIMPRIS) })]),
+          h('div', null, [h('small', { text: 'Preliminärt RUT-avdrag (50 %)' }), h('b', { class: 'pg-minus', text: '− ' + kr2(rutPerTimme) + ' per timme' })]),
+          h('div', null, [h('small', { text: 'Du betalar efter RUT, per arbetstimme' }), h('b', { text: kr2(RUT_TIMPRIS - rutPerTimme) })]),
+        ]),
+        h('p', { class: 'pg-hint', text: 'Riktpriset gäller arbetskostnad inklusive moms. Totalpriset beror på hur lång tid arbetet tar. Material, maskiner och resor ger inget RUT-avdrag.' })
+      ]));
     }
     b.append(rc, continueButton);
     return;
@@ -463,7 +455,7 @@ function update() {
     const kundPris = est.rot || est;
     sumEl.append(h('p', { class: 'pg-sum-price' }, [h('small', { text: est.rot ? 'Efter ROT' : 'Riktpris' }), h('b', { text: kr(kundPris.fran) + ' – ' + kr(kundPris.till) })]));
   }
-  const next = !val.jobb ? 1 : !val.underlag ? 2 : steps[4].box.classList.contains('locked') ? 3 : 5;
+  const next = !val.jobb ? 1 : (val.jobb !== 'service' && !val.underlag) ? 2 : steps[4].box.classList.contains('locked') ? 3 : 5;
   sumEl.append(h('a', { class: 'btn btn-gold pg-sum-go', href: '#pg-h' + next, onclick: e => { e.preventDefault(); go(next); } }, [next === 5 ? 'Skicka med bilder' : 'Fortsätt till steg ' + next]));
 }
 
