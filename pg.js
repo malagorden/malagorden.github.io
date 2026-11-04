@@ -234,9 +234,7 @@ function renderResultat() {
       rc.append(h('div', { class: 'pg-rot-head' }, [h('span', { class: 'pg-rot-badge', text: 'Inget RUT-avdrag för detta arbete' }), h('p', { text: 'Plantering, sten- och plattläggning, murar, uppfarter och bortforsling av trädgårdsavfall ger inte RUT.' })]));
     } else {
       rc.append(h('div', { class: 'pg-rot-head' }, [h('span', { class: 'pg-rot-badge', text: 'RUT kan gälla' }), h('p', { text: 'Arbetet ska utföras på tomten där bostaden står. Skatteverket prövar villkoren och ditt kvarvarande avdragsutrymme.' })]));
-      const p = PRIS.jobb && PRIS.jobb[val.jobb];
-      const start = est && p && p.arbete > 0 ? Math.round(((est.fran + est.till) / 2) * p.arbete / 100) : '';
-      rotInput = h('input', { type: 'number', inputmode: 'decimal', min: 0, max: 2000, step: 0.5, id: 'pg-arb', class: 'pg-num', placeholder: 'Ange antal timmar' });
+      rotInput = h('input', { type: 'number', inputmode: 'decimal', min: 0.5, max: 2000, step: 0.5, id: 'pg-arb', class: 'pg-num', value: 1, placeholder: 'Ange antal timmar' });
       const out = h('div', { class: 'pg-rot-out', 'aria-live': 'polite' });
       const calc = () => {
         clear(out);
@@ -255,7 +253,7 @@ function renderResultat() {
         out.append(h('p', { class: 'pg-hint', text: 'RUT räknas bara på arbetskostnaden inklusive moms. Material, maskiner och resor ingår inte. Skatteverket beslutar om det slutliga avdraget.' }));
       };
       rotInput.addEventListener('input', calc);
-      rc.append(h('div', { class: 'pg-rot-calc' }, [h('label', { for: 'pg-arb', text: 'Ungefär hur många arbetstimmar?' }), h('div', { class: 'pg-numrow' }, [rotInput, h('span', { class: 'pg-unit', text: 'tim' })]), out]));
+      rc.append(h('div', { class: 'pg-rot-calc' }, [h('label', { for: 'pg-arb', text: 'Ungefär hur många arbetstimmar? (exempel: 1 timme)' }), h('p', { class: 'pg-hint', text: 'Exemplet räknas med 550 kr per timme inklusive moms. Ändra antalet timmar för att se en annan uppskattning.' }), h('div', { class: 'pg-numrow' }, [rotInput, h('span', { class: 'pg-unit', text: 'tim' })]), out]));
       calc();
     }
     b.append(rc);
