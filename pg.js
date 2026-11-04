@@ -232,7 +232,7 @@ function renderResultat() {
 /* 5. request with photos */
 function renderForm() {
   const b = clear(steps[5].body);
-  const form = h('form', { class: 'pg-form', method: 'POST', action: 'https://formsubmit.co/info@malagorden.se', enctype: 'multipart/form-data', novalidate: true });
+  const form = h('form', { class: 'pg-form', method: 'POST', action: 'https://usebasin.com/f/e68ba0f96318', enctype: 'multipart/form-data', novalidate: true });
   form.append(
     h('input', { type: 'hidden', name: '_subject', value: 'Ny offertförfrågan från malagorden.se' }),
     h('input', { type: 'hidden', name: '_template', value: 'table' }),
