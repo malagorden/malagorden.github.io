@@ -105,7 +105,7 @@ export const riktPris = () => ({
   jobb: {
     invandig: { fran: 300, till: 480, arbete: 75, tillagg: { gott: 0, hal: 15, ojamn: 35, tapet: 45, nygips: 40 } },
     utvandig: { fran: 350, till: 550, arbete: 70, tillagg: { gott: 0, flagnar: 20, pavaxt: 15, skadat: 35 } },
-    gips: { fran: 600, till: 850, arbete: 75, tillagg: { nya: 0, befintlig: 10, skador: 20 } },
+    gips: { fran: 550, till: 790, arbete: 75, tillagg: { nya: 0, befintlig: 10, skador: 20 } },
     golv: { fran: 325, till: 525, arbete: 70, tillagg: { jamnt: 0, ojamnt: 25, riva: 30 } },
     mark: { fran: 650, till: 950, arbete: 70, tillagg: { ny: 30, byta: 20, satt: 25 } },
   },
