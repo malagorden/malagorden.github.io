@@ -342,39 +342,47 @@ function renderForm() {
       uppskattning: (() => { const x = uppskatta(PRIS, val); return x ? { fran: x.fran, till: x.till } : null; })(),
       bilder: bilder.map(x => ({ name: x.name, data: x.data })),
     };
-    // GitHub Pages har ingen egen server. FormSubmit skickar därför förfrågan
-    // direkt till Målagårdens e-postadress.
+    // GitHub Pages har ingen egen server. Basin tar emot offertförfrågan
+    // direkt från webbläsaren och lagrar även uppladdade bilder.
     let r;
     try {
-      const mailPayload = {
-        _subject: 'Ny offertförfrågan från malagorden.se',
-        _template: 'table',
-        _replyto: payload.email || '',
-        namn: payload.namn,
-        telefon: payload.telefon,
-        'kundens e-post': payload.email || 'Ej angiven',
-        'adress eller ort': payload.ort,
-        'typ av arbete': (findJobb(payload.jobb) || {}).namn || 'Ej angivet',
-        underlag: ((findJobb(payload.jobb) || {}).underlag || []).find(x => x.id === payload.underlag)?.t || 'Ej angivet',
-        'vad jobbet gäller': [payload.delar.join(', '), rutArbeteText(payload.rutArbete)].filter(Boolean).join(' — ') || 'Ej angivet',
-        storlek: payload.storlek ? `${payload.storlek} m²` : 'Bedöms på plats',
-        'önskad tid': payload.naar || 'Ej angiven',
-        meddelande: payload.meddelande || 'Inget ytterligare meddelande',
-      bilder: payload.bilder.length ? `${payload.bilder.length} bild${payload.bilder.length === 1 ? '' : 'er'} bifogade.` : 'Inga bilder bifogade.'
-      };
       const formData = new FormData();
-      Object.entries(mailPayload).forEach(([key, value]) => formData.append(key, value));
+      const jobb = findJobb(payload.jobb);
+      const underlag = jobb && jobb.underlag.find(x => x.id === payload.underlag);
+      const estimation = payload.uppskattning;
+      const fields = {
+        name: payload.namn,
+        phone: payload.telefon,
+        email: payload.email || '',
+        address: payload.ort,
+        'Typ av arbete': jobb ? jobb.namn : 'Ej angivet',
+        Underlag: underlag ? underlag.t : 'Ej angivet',
+        'Arbetet gäller': [payload.delar.join(', '), rutArbeteText(payload.rutArbete)].filter(Boolean).join(' — ') || 'Ej angivet',
+        Storlek: payload.storlek ? `${payload.storlek} m²` : 'Bedöms på plats',
+        'Önskad tid': payload.naar || 'Ej angiven',
+        Meddelande: payload.meddelande || 'Inget ytterligare meddelande',
+        Riktpris: estimation ? `${kr(estimation.fran)} – ${kr(estimation.till)}` : 'Pris efter att underlaget har granskats',
+        website: payload.website || '',
+      };
+      Object.entries(fields).forEach(([key, value]) => formData.append(key, value));
       for (const image of payload.bilder) {
         const blob = await (await fetch(image.data)).blob();
-        formData.append('attachment', new File([blob], image.name, { type: image.type || 'image/jpeg' }));
+        formData.append('attachments[]', new File([blob], image.name, { type: 'image/jpeg' }));
       }
-      r = await fetch('https://formsubmit.co/ajax/info@malagorden.se', {
+      const response = await fetch('https://usebasin.com/f/e68ba0f96318', {
         method: 'POST',
         headers: { Accept: 'application/json' },
-        body: formData
-      }).then(x => x.ok ? x.json() : Promise.reject(new Error('E-posttjänsten svarade inte.')));
-    } catch { r = { ok: false, fejl: 'Kunde inte skicka förfrågan.' }; }
-    if (r && (r.success === 'true' || r.success === true || r.next )) return done(payload);
+        body: formData,
+      });
+      r = { ok: response.ok };
+      if (!response.ok) {
+        const detail = await response.text().catch(() => '');
+        r.fejl = detail && detail.length < 300 ? detail : 'E-posttjänsten kunde inte ta emot förfrågan.';
+      }
+    } catch (error) {
+      r = { ok: false, fejl: 'Anslutningen till formuläret misslyckades. Kontrollera internetanslutningen och försök igen.' };
+    }
+    if (r && r.ok) return done(payload);
     send.disabled = false; send.textContent = 'Försök skicka igen';
     formErr.append(h('p', { text: (r && r.fejl ? r.fejl + ' ' : '') + 'Du kan också ringa oss eller skicka bilderna på WhatsApp.' }),
       h('div', { class: 'pg-alt' }, [h('a', { class: 'btn btn-line', href: 'tel:+46720010179', text: 'Ring ' + TEL }), h('a', { class: 'btn btn-line', href: WA, target: '_blank', rel: 'noopener', text: 'WhatsApp' }),
@@ -402,7 +410,7 @@ function done(p) {
   root.querySelectorAll('.pg-step').forEach(s => { s.hidden = true; });
   const box = h('section', { class: 'pg-done', tabindex: '-1' }, [
     h('span', { class: 'pg-done-ic', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' }),
-    h('h2', { text: `Tack ${p.namn.split(' ')[0]}! Vi har fått din förfrågan.` }),
+    h('h2', { text: `Tack för ditt mejl, ${p.namn.split(' ')[0]}!` }),
     h('p', { class: 'lead', text: `Målagården har fått allt om ${j ? j.namn.toLowerCase() : 'jobbet'}${p.bilder.length ? ` och dina ${p.bilder.length} ${p.bilder.length === 1 ? 'bild' : 'bilder'}` : ''}. Vi återkommer för att gå igenom arbetet och lämna en tydlig offert.` }),
     h('p', null, ['Vill du lägga till något? Ring ', h('a', { href: 'tel:+46720010179', text: TEL }), ' eller skicka fler bilder på ', h('a', { href: WA, target: '_blank', rel: 'noopener', text: 'WhatsApp' }), '.']),
   ]);
