@@ -67,7 +67,17 @@ export const JOBB = [
     ],
   },
   {
-},
+    id: 'kakel', namn: 'Kakel & klinker inomhus', kort: 'Plattsättning i badrum, kök eller hall', bild: 'fiskbensgolv',
+    enhet: '', enhetLang: '', rot: 'inne', storlekar: [],
+    delar: ['Badrum', 'Kök', 'Hall'],
+    underlag: [{ id: 'renovering', t: 'Renovering inomhus', s: 'ROT kan gälla för arbetskostnaden när villkoren är uppfyllda.', ikon: 'plattor' }],
+  },
+  {
+    id: 'murninghus', namn: 'Murning på bostadshuset', kort: 'Fasad, skorsten eller husets stomme', bild: 'gula-huset',
+    enhet: '', enhetLang: '', rot: 'smahus', storlekar: [],
+    delar: ['Fasad', 'Skorsten', 'Husets stomme', 'Ombyggnad eller tillbyggnad'],
+    underlag: [{ id: 'hus', t: 'Murningsarbete på bostadshuset', s: 'ROT kan gälla för arbetskostnaden när villkoren är uppfyllda.', ikon: 'plattor' }],
+  },
   {
     id: 'service', namn: 'Fastighetsservice & trädgård', kort: 'Löpande skötsel, underhåll och praktisk hjälp', bild: 'hackplantering',
     enhet: '', enhetLang: '', rot: 'varierar',
