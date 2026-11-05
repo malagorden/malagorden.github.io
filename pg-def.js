@@ -1,7 +1,7 @@
 // Målagården — Prisguide: job definitions + price/ROT maths. ONE source, used by the site (js/pg-def.js),
 // the Kontrolpanel (/admin) and the server (api/_mg/pg-def.mjs). Plain ES module, no dependencies.
 //
-// Prices are NEVER invented here: every price field starts empty and is filled in by Målagården in /admin.
+// Riktpriserna används direkt på hemsidan. Material visas separat i offerten.
 // ROT facts (Skatteverket, checked 19/10-2026): 30 % of the labour cost (incl. VAT), max 50 000 kr per person and year,
 // material and travel give no deduction, laying stone/slabs directly on the ground and walls give no ROT.
 
@@ -85,6 +85,19 @@ export const KUNDTYP = [
 ];
 
 export const tomPris = () => ({ visa: false, jobb: Object.fromEntries(JOBB.filter(j => j.enhet).map(j => [j.id, { fran: null, till: null, arbete: null, tillagg: Object.fromEntries(j.underlag.map(u => [u.id, 0])) }])) });
+
+// Priser inklusive moms och utan material. Påslag används när underlaget kräver
+// mer förarbete. De kan fortfarande ersättas av priser från kontrollpanelen.
+export const riktPris = () => ({
+  visa: true,
+  jobb: {
+    invandig: { fran: 300, till: 480, arbete: 75, tillagg: { gott: 0, hal: 15, ojamn: 35, tapet: 45, nygips: 40 } },
+    utvandig: { fran: 350, till: 550, arbete: 70, tillagg: { gott: 0, flagnar: 20, pavaxt: 15, skadat: 35 } },
+    gips: { fran: 600, till: 850, arbete: 75, tillagg: { nya: 0, befintlig: 10, skador: 20 } },
+    golv: { fran: 325, till: 525, arbete: 70, tillagg: { jamnt: 0, ojamnt: 25, riva: 30 } },
+    mark: { fran: 650, till: 950, arbete: 70, tillagg: { ny: 30, byta: 20, satt: 25 } },
+  },
+});
 
 export const jobb = id => JOBB.find(j => j.id === id) || null;
 

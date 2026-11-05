@@ -2,12 +2,12 @@
    Jobb → underlag → storlek → vem är du → resultat (Målagårdens egna priser om de visas, annars "pris efter att vi sett underlaget")
    → ROT-räknare (Skatteverkets regler) → förfrågan med bilder till Kontrolpanelen (/api/mg/offert).
    Inga priser finns i koden: de hämtas från /api/mg/priser, där Målagården själva fyller i dem. */
-import { JOBB, KUNDTYP, jobb as findJobb, rotFor, rotAvdrag, uppskatta, kr, tomPris, ROT } from './pg-def.js';
+import { JOBB, KUNDTYP, jobb as findJobb, rotFor, rotAvdrag, uppskatta, kr, riktPris, ROT } from './pg-def.js';
 
 const root = document.getElementById('pg'), sumEl = document.getElementById('pg-sum');
 const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TEL = '072-001 01 79', WA = 'https://wa.me/46720010179';
-let PRIS = tomPris();
+let PRIS = riktPris();
 const val = { jobb: '', underlag: '', delar: [], storlek: '', vetEj: false, kundtyp: '', agare: 1, beskrivning: '', rutArbete: '' };
 const RUT_TIMPRIS = 525;
 const RUT_ARBETEN = [
