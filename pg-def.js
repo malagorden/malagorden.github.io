@@ -63,7 +63,21 @@ export const JOBB = [
     underlag: [
       { id: 'ny', t: 'Gräs eller jord i dag', s: 'Marken grävs ur och ett stabilt bärlager byggs upp.', ikon: 'jord' },
       { id: 'byta', t: 'Gamla plattor ska bytas', s: 'Plattorna tas upp och underlaget kontrolleras.', ikon: 'plattor' },
-      { id: 'satt', t: 'Sättningar eller lutning', s: 'Underarbetet görs om så att ytan blir stabil.', ikon: '
+      { id: 'satt', t: 'Sättningar eller lutning', s: 'Underarbetet görs om så att ytan blir stabil.', ikon: 'lutning' },
+    ],
+  },
+  {
+    id: 'kakel', namn: 'Kakel & klinker inomhus', kort: 'Plattsättning i badrum, kök eller hall', bild: 'fiskbensgolv',
+    enhet: '', enhetLang: '', rot: 'inne', storlekar: [],
+    delar: ['Badrum', 'Kök', 'Hall'],
+    underlag: [{ id: 'renovering', t: 'Renovering inomhus', s: 'ROT kan gälla för arbetskostnaden när villkoren är uppfyllda.', ikon: 'plattor' }],
+  },
+  {
+    id: 'murninghus', namn: 'Murning på bostadshuset', kort: 'Fasad, skorsten eller husets stomme', bild: 'gula-huset',
+    enhet: '', enhetLang: '', rot: 'smahus', storlekar: [],
+    delar: ['Fasad', 'Skorsten', 'Husets stomme', 'Ombyggnad eller tillbyggnad'],
+    underlag: [{ id: 'hus', t: 'Murningsarbete på bostadshuset', s: 'ROT kan gälla för arbetskostnaden när villkoren är uppfyllda.', ikon: 'plattor' }],
+  },
   {
     id: 'service', namn: 'Fastighetsservice & trädgård', kort: 'Löpande skötsel, underhåll och praktisk hjälp', bild: 'hackplantering',
     enhet: '', enhetLang: '', rot: 'varierar',
@@ -91,7 +105,7 @@ export const riktPris = () => ({
   jobb: {
     invandig: { fran: 300, till: 480, arbete: 75, tillagg: { gott: 0, hal: 15, ojamn: 35, tapet: 45, nygips: 40 } },
     utvandig: { fran: 350, till: 550, arbete: 70, tillagg: { gott: 0, flagnar: 20, pavaxt: 15, skadat: 35 } },
-    gips: { fran: 550, till: 790, arbete: 75, tillagg: { nya: 0, befintlig: 10, skador: 20 } },
+    gips: { fran: 600, till: 850, arbete: 75, tillagg: { nya: 0, befintlig: 10, skador: 20 } },
     golv: { fran: 325, till: 525, arbete: 70, tillagg: { jamnt: 0, ojamnt: 25, riva: 30 } },
     mark: { fran: 650, till: 950, arbete: 70, tillagg: { ny: 30, byta: 20, satt: 25 } },
   },
