@@ -188,11 +188,12 @@ function renderResultat() {
   const est = uppskatta(PRIS, val);
   const card = h('div', { class: 'pg-result' });
   if (est) {
-    card.append(h('p', { class: 'pg-eyebrow', text: 'Ungefärligt pris för ' + j.namn.toLowerCase() }),
+    const attBetala = est.rot || est;
+    card.append(h('p', { class: 'pg-eyebrow', text: (est.rot ? 'Ungefärligt pris att betala efter ROT för ' : 'Ungefärligt pris för ') + j.namn.toLowerCase() }),
       h('p', { class: 'pg-price' }, [h('span', { 'data-v': 0, class: 'pg-a' }), h('span', { class: 'pg-dash', text: ' – ' }), h('span', { 'data-v': 0, class: 'pg-b' })]));
-    if (est.rot) card.append(h('p', { class: 'pg-after' }, ['Efter ROT-avdrag ca ', h('b', { text: kr(est.rot.fran) + ' – ' + kr(est.rot.till) }), est.rot.taket ? ' (taket på ROT-avdraget är nått)' : '']));
+    if (est.rot) card.append(h('p', { class: 'pg-after' }, ['Pris före ROT-avdrag: ', h('b', { text: kr(est.fran) + ' – ' + kr(est.till) }), est.rot.taket ? ' (ROT-taket är nått)' : '']));
     card.append(h('p', { class: 'pg-fine', text: 'Ett riktpris från Målagårdens egna priser, inklusive moms. Det exakta priset står i offerten, när vi har sett underlaget.' }));
-    requestAnimationFrame(() => { countTo(card.querySelector('.pg-a'), est.fran); countTo(card.querySelector('.pg-b'), est.till); });
+    requestAnimationFrame(() => { countTo(card.querySelector('.pg-a'), attBetala.fran); countTo(card.querySelector('.pg-b'), attBetala.till); });
   } else {
     card.append(h('p', { class: 'pg-eyebrow', text: 'Ditt pris' }),
       h('p', { class: 'pg-price pg-price-txt', text: 'Sätts när vi har sett underlaget.' }),
