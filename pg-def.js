@@ -1,9 +1,9 @@
 // Målagården — Prisguide: job definitions + price/ROT maths. ONE source, used by the site (js/pg-def.js),
 // the Kontrolpanel (/admin) and the server (api/_mg/pg-def.mjs). Plain ES module, no dependencies.
 //
-// Riktpriserna används direkt på hemsidan. Material visas separat i offerten.
+// Prices are NEVER invented here: every price field starts empty and is filled in by Målagården in /admin.
 // ROT facts (Skatteverket, checked 19/10-2026): 30 % of the labour cost (incl. VAT), max 50 000 kr per person and year,
-// material and travel give no deduction, outdoor paving and garden walls give no ROT.
+// material and travel give no deduction, laying stone/slabs directly on the ground and walls give no ROT.
 
 export const ROT = { andel: 0.30, maxPerPerson: 50000 };
 
@@ -67,18 +67,6 @@ export const JOBB = [
     ],
   },
   {
-    id: 'kakel', namn: 'Kakel & klinker inomhus', kort: 'Plattsättning i badrum, kök eller hall', bild: 'fiskbensgolv',
-    enhet: '', enhetLang: '', rot: 'inne', storlekar: [],
-    delar: ['Badrum', 'Kök', 'Hall'],
-    underlag: [{ id: 'renovering', t: 'Renovering inomhus', s: 'ROT kan gälla för arbetskostnaden när villkoren är uppfyllda.', ikon: 'plattor' }],
-  },
-  {
-    id: 'murninghus', namn: 'Murning på bostadshuset', kort: 'Fasad, skorsten eller husets stomme', bild: 'gula-huset',
-    enhet: '', enhetLang: '', rot: 'smahus', storlekar: [],
-    delar: ['Fasad', 'Skorsten', 'Husets stomme', 'Ombyggnad eller tillbyggnad'],
-    underlag: [{ id: 'hus', t: 'Murningsarbete på bostadshuset', s: 'ROT kan gälla för arbetskostnaden när villkoren är uppfyllda.', ikon: 'plattor' }],
-  },
-  {
     id: 'service', namn: 'Fastighetsservice & trädgård', kort: 'Löpande skötsel, underhåll och praktisk hjälp', bild: 'hackplantering',
     enhet: '', enhetLang: '', rot: 'varierar',
     storlekar: [],
@@ -98,19 +86,6 @@ export const KUNDTYP = [
 
 export const tomPris = () => ({ visa: false, jobb: Object.fromEntries(JOBB.filter(j => j.enhet).map(j => [j.id, { fran: null, till: null, arbete: null, tillagg: Object.fromEntries(j.underlag.map(u => [u.id, 0])) }])) });
 
-// Priser inklusive moms och utan material. Påslag används när underlaget kräver
-// mer förarbete. De kan fortfarande ersättas av priser från kontrollpanelen.
-export const riktPris = () => ({
-  visa: true,
-  jobb: {
-    invandig: { fran: 300, till: 480, arbete: 75, tillagg: { gott: 0, hal: 15, ojamn: 35, tapet: 45, nygips: 40 } },
-    utvandig: { fran: 350, till: 550, arbete: 70, tillagg: { gott: 0, flagnar: 20, pavaxt: 15, skadat: 35 } },
-    gips: { fran: 600, till: 850, arbete: 75, tillagg: { nya: 0, befintlig: 10, skador: 20 } },
-    golv: { fran: 325, till: 525, arbete: 70, tillagg: { jamnt: 0, ojamnt: 25, riva: 30 } },
-    mark: { fran: 650, till: 950, arbete: 70, tillagg: { ny: 30, byta: 20, satt: 25 } },
-  },
-});
-
 export const jobb = id => JOBB.find(j => j.id === id) || null;
 
 /** Is the job ROT work for this customer type? 'ja' | 'nej' | 'kanske' (+ reason in Swedish). */
@@ -121,8 +96,6 @@ export function rotFor(jobbId, kundtyp) {
   if (j.rot === 'nej') return { svar: 'nej', varfor: 'Att lägga sten och plattor direkt på mark eller bygga murar ger enligt Skatteverket inget ROT-avdrag.' };
   if (j.rot === 'varierar') return { svar: 'kanske', varfor: 'Det beror på jobbet. Vi berättar i offerten om ROT- eller RUT-avdrag gäller.' };
   if (kundtyp === 'bostadsratt' && j.rot === 'smahus') return { svar: 'nej', varfor: 'I en bostadsrätt gäller ROT bara arbete inne i lägenheten. Fasaden sköts av föreningen.' };
-  if (j.id === 'kakel') return { svar: 'ja', varfor: 'Kakel eller klinker inomhus vid renovering kan ge ROT. Avdraget gäller bara arbetskostnaden och Skatteverkets villkor måste vara uppfyllda.' };
-  if (j.id === 'murninghus') return { svar: 'ja', varfor: 'Murningsarbete på bostadshuset kan ge ROT. Avdraget gäller bara arbetskostnaden och Skatteverkets villkor måste vara uppfyllda.' };
   return { svar: 'ja', varfor: 'Målning, gipsning och golvläggning i bostaden är ROT-arbete. Avdraget är 30 procent av arbetskostnaden.' };
 }
 

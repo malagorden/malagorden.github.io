@@ -2,12 +2,12 @@
    Jobb → underlag → storlek → vem är du → resultat (Målagårdens egna priser om de visas, annars "pris efter att vi sett underlaget")
    → ROT-räknare (Skatteverkets regler) → förfrågan med bilder till Kontrolpanelen (/api/mg/offert).
    Inga priser finns i koden: de hämtas från /api/mg/priser, där Målagården själva fyller i dem. */
-import { JOBB, KUNDTYP, jobb as findJobb, rotFor, rotAvdrag, uppskatta, kr, riktPris, ROT } from './pg-def.js';
+import { JOBB, KUNDTYP, jobb as findJobb, rotFor, rotAvdrag, uppskatta, kr, tomPris, ROT } from './pg-def.js';
 
 const root = document.getElementById('pg'), sumEl = document.getElementById('pg-sum');
 const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const TEL = '072-001 01 79', WA = 'https://wa.me/46720010179';
-let PRIS = riktPris();
+let PRIS = tomPris();
 const val = { jobb: '', underlag: '', delar: [], storlek: '', vetEj: false, kundtyp: '', agare: 1, beskrivning: '', rutArbete: '' };
 const RUT_TIMPRIS = 525;
 const RUT_ARBETEN = [
@@ -188,12 +188,11 @@ function renderResultat() {
   const est = uppskatta(PRIS, val);
   const card = h('div', { class: 'pg-result' });
   if (est) {
-    const attBetala = est.rot || est;
-    card.append(h('p', { class: 'pg-eyebrow', text: (est.rot ? 'Ungefärligt pris att betala efter ROT för ' : 'Ungefärligt pris för ') + j.namn.toLowerCase() }),
+    card.append(h('p', { class: 'pg-eyebrow', text: 'Ungefärligt pris för ' + j.namn.toLowerCase() }),
       h('p', { class: 'pg-price' }, [h('span', { 'data-v': 0, class: 'pg-a' }), h('span', { class: 'pg-dash', text: ' – ' }), h('span', { 'data-v': 0, class: 'pg-b' })]));
-    if (est.rot) card.append(h('p', { class: 'pg-after' }, ['Pris före ROT-avdrag: ', h('b', { text: kr(est.fran) + ' – ' + kr(est.till) }), est.rot.taket ? ' (ROT-taket är nått)' : '']));
+    if (est.rot) card.append(h('p', { class: 'pg-after' }, ['Efter ROT-avdrag ca ', h('b', { text: kr(est.rot.fran) + ' – ' + kr(est.rot.till) }), est.rot.taket ? ' (taket på ROT-avdraget är nått)' : '']));
     card.append(h('p', { class: 'pg-fine', text: 'Ett riktpris från Målagårdens egna priser, inklusive moms. Det exakta priset står i offerten, när vi har sett underlaget.' }));
-    requestAnimationFrame(() => { countTo(card.querySelector('.pg-a'), attBetala.fran); countTo(card.querySelector('.pg-b'), attBetala.till); });
+    requestAnimationFrame(() => { countTo(card.querySelector('.pg-a'), est.fran); countTo(card.querySelector('.pg-b'), est.till); });
   } else {
     card.append(h('p', { class: 'pg-eyebrow', text: 'Ditt pris' }),
       h('p', { class: 'pg-price pg-price-txt', text: 'Sätts när vi har sett underlaget.' }),
@@ -248,15 +247,13 @@ function renderResultat() {
       rc.append(h('div', { class: 'pg-rot-calc' }, [h('label', { for: 'pg-rut-timmar', text: 'Ungefär hur många arbetstimmar?' }), h('div', { class: 'pg-numrow' }, [hours, h('span', { class: 'pg-unit', text: 'tim' })]), out]));
       calculate();
     }
-    // Visa timpris och preliminärt belopp att betala direkt över riktpriset.
-    b.prepend(rc);
+    b.append(rc);
     return;
   }
   // Behåll ROT-räknaren för övriga jobb.
   const rot = rotFor(val.jobb, val.kundtyp);
   const rc = h('div', { class: 'pg-rot pg-rot-' + rot.svar });
-  const villkoratROT = ['kakel', 'murninghus'].includes(val.jobb);
-  rc.append(h('div', { class: 'pg-rot-head' }, [h('span', { class: 'pg-rot-badge', text: rot.svar === 'ja' && !villkoratROT ? 'ROT-avdrag gäller' : rot.svar === 'nej' ? 'Inget ROT-avdrag' : 'ROT kan gälla' }), h('p', { text: rot.varfor })]));
+  rc.append(h('div', { class: 'pg-rot-head' }, [h('span', { class: 'pg-rot-badge', text: rot.svar === 'ja' ? 'ROT-avdrag gäller' : rot.svar === 'nej' ? 'Inget ROT-avdrag' : 'ROT kan gälla' }), h('p', { text: rot.varfor })]));
   if (rot.svar !== 'nej') {
     const p = PRIS.jobb && PRIS.jobb[val.jobb];
     const start = est && p && p.arbete > 0 ? Math.round(((est.fran + est.till) / 2) * p.arbete / 100) : '';
@@ -345,47 +342,39 @@ function renderForm() {
       uppskattning: (() => { const x = uppskatta(PRIS, val); return x ? { fran: x.fran, till: x.till } : null; })(),
       bilder: bilder.map(x => ({ name: x.name, data: x.data })),
     };
-    // GitHub Pages har ingen egen server. Basin tar emot offertförfrågan
-    // direkt från webbläsaren och lagrar även uppladdade bilder.
+    // GitHub Pages har ingen egen server. FormSubmit skickar därför förfrågan
+    // direkt till Målagårdens e-postadress.
     let r;
     try {
-      const formData = new FormData();
-      const jobb = findJobb(payload.jobb);
-      const underlag = jobb && jobb.underlag.find(x => x.id === payload.underlag);
-      const estimation = payload.uppskattning;
-      const fields = {
-        name: payload.namn,
-        phone: payload.telefon,
-        email: payload.email || '',
-        address: payload.ort,
-        'Typ av arbete': jobb ? jobb.namn : 'Ej angivet',
-        Underlag: underlag ? underlag.t : 'Ej angivet',
-        'Arbetet gäller': [payload.delar.join(', '), rutArbeteText(payload.rutArbete)].filter(Boolean).join(' — ') || 'Ej angivet',
-        Storlek: payload.storlek ? `${payload.storlek} m²` : 'Bedöms på plats',
-        'Önskad tid': payload.naar || 'Ej angiven',
-        Meddelande: payload.meddelande || 'Inget ytterligare meddelande',
-        Riktpris: estimation ? `${kr(estimation.fran)} – ${kr(estimation.till)}` : 'Pris efter att underlaget har granskats',
-        website: payload.website || '',
+      const mailPayload = {
+        _subject: 'Ny offertförfrågan från malagorden.se',
+        _template: 'table',
+        _replyto: payload.email || '',
+        namn: payload.namn,
+        telefon: payload.telefon,
+        'kundens e-post': payload.email || 'Ej angiven',
+        'adress eller ort': payload.ort,
+        'typ av arbete': (findJobb(payload.jobb) || {}).namn || 'Ej angivet',
+        underlag: ((findJobb(payload.jobb) || {}).underlag || []).find(x => x.id === payload.underlag)?.t || 'Ej angivet',
+        'vad jobbet gäller': [payload.delar.join(', '), rutArbeteText(payload.rutArbete)].filter(Boolean).join(' — ') || 'Ej angivet',
+        storlek: payload.storlek ? `${payload.storlek} m²` : 'Bedöms på plats',
+        'önskad tid': payload.naar || 'Ej angiven',
+        meddelande: payload.meddelande || 'Inget ytterligare meddelande',
+      bilder: payload.bilder.length ? `${payload.bilder.length} bild${payload.bilder.length === 1 ? '' : 'er'} bifogade.` : 'Inga bilder bifogade.'
       };
-      Object.entries(fields).forEach(([key, value]) => formData.append(key, value));
+      const formData = new FormData();
+      Object.entries(mailPayload).forEach(([key, value]) => formData.append(key, value));
       for (const image of payload.bilder) {
         const blob = await (await fetch(image.data)).blob();
-        formData.append('attachments[]', new File([blob], image.name, { type: 'image/jpeg' }));
+        formData.append('attachment', new File([blob], image.name, { type: image.type || 'image/jpeg' }));
       }
-      const response = await fetch('https://usebasin.com/f/e68ba0f96318', {
+      r = await fetch('https://formsubmit.co/ajax/info@malagorden.se', {
         method: 'POST',
         headers: { Accept: 'application/json' },
-        body: formData,
-      });
-      r = { ok: response.ok };
-      if (!response.ok) {
-        const detail = await response.text().catch(() => '');
-        r.fejl = detail && detail.length < 300 ? detail : 'E-posttjänsten kunde inte ta emot förfrågan.';
-      }
-    } catch (error) {
-      r = { ok: false, fejl: 'Anslutningen till formuläret misslyckades. Kontrollera internetanslutningen och försök igen.' };
-    }
-    if (r && r.ok) return done(payload);
+        body: formData
+      }).then(x => x.ok ? x.json() : Promise.reject(new Error('E-posttjänsten svarade inte.')));
+    } catch { r = { ok: false, fejl: 'Kunde inte skicka förfrågan.' }; }
+    if (r && (r.success === 'true' || r.success === true || r.next )) return done(payload);
     send.disabled = false; send.textContent = 'Försök skicka igen';
     formErr.append(h('p', { text: (r && r.fejl ? r.fejl + ' ' : '') + 'Du kan också ringa oss eller skicka bilderna på WhatsApp.' }),
       h('div', { class: 'pg-alt' }, [h('a', { class: 'btn btn-line', href: 'tel:+46720010179', text: 'Ring ' + TEL }), h('a', { class: 'btn btn-line', href: WA, target: '_blank', rel: 'noopener', text: 'WhatsApp' }),
@@ -413,7 +402,7 @@ function done(p) {
   root.querySelectorAll('.pg-step').forEach(s => { s.hidden = true; });
   const box = h('section', { class: 'pg-done', tabindex: '-1' }, [
     h('span', { class: 'pg-done-ic', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' }),
-    h('h2', { text: `Tack för ditt mejl, ${p.namn.split(' ')[0]}!` }),
+    h('h2', { text: `Tack ${p.namn.split(' ')[0]}! Vi har fått din förfrågan.` }),
     h('p', { class: 'lead', text: `Målagården har fått allt om ${j ? j.namn.toLowerCase() : 'jobbet'}${p.bilder.length ? ` och dina ${p.bilder.length} ${p.bilder.length === 1 ? 'bild' : 'bilder'}` : ''}. Vi återkommer för att gå igenom arbetet och lämna en tydlig offert.` }),
     h('p', null, ['Vill du lägga till något? Ring ', h('a', { href: 'tel:+46720010179', text: TEL }), ' eller skicka fler bilder på ', h('a', { href: WA, target: '_blank', rel: 'noopener', text: 'WhatsApp' }), '.']),
   ]);
@@ -448,21 +437,18 @@ function update() {
   const j = findJobb(val.jobb), u = j && j.underlag.find(x => x.id === val.underlag), k = KUNDTYP.find(x => x.id === val.kundtyp);
   clear(sumEl);
   sumEl.append(h('p', { class: 'pg-sum-t', text: 'Det här får Målagården' }));
-  const est = uppskatta(PRIS, val);
-  if (est) {
-    const payable = est.rot || est;
-    sumEl.append(h('p', { class: 'pg-sum-price' }, [h('small', { text: 'Ungefärligt pris att betala' }), h('b', { text: kr(payable.fran) + ' – ' + kr(payable.till) })]));
-  }
   const rows = [
     ['Jobb', j ? j.namn : null], ['Underlag', u ? u.t : val.underlag === 'vetej' ? 'Vet inte, bedöms från bilder' : null],
     ['Gäller', val.delar.length ? val.delar.join(', ') : null],
     ['Storlek', j && j.enhet ? (val.vetEj ? 'Mäts på plats' : Number(val.storlek) > 0 ? `${Number(val.storlek)} ${j.enhetLang}` : null) : (val.beskrivning ? 'Beskrivning finns' : null)],
-    ['Kund', k ? k.t : null], [val.jobb === 'service' && val.delar.includes('Trädgård') ? 'RUT' : 'ROT', val.jobb && val.kundtyp ? (val.jobb === 'service' && val.delar.includes('Trädgård') ? (val.kundtyp === 'foretag' ? 'Gäller inte för företag/BRF' : RUT_ARBETEN.some(([id]) => id === val.rutArbete) ? 'Kan gälla' : val.rutArbete === 'annat' ? 'Gäller inte för valt arbete' : 'Välj arbetstyp') : ['kakel', 'murninghus'].includes(val.jobb) && rotFor(val.jobb, val.kundtyp).svar === 'ja' ? 'Kan gälla' : ({ ja: 'Gäller', nej: 'Gäller inte', kanske: 'Vi återkommer' })[rotFor(val.jobb, val.kundtyp).svar]) : null],
+    ['Kund', k ? k.t : null], [val.jobb === 'service' && val.delar.includes('Trädgård') ? 'RUT' : 'ROT', val.jobb && val.kundtyp ? (val.jobb === 'service' && val.delar.includes('Trädgård') ? (val.kundtyp === 'foretag' ? 'Gäller inte för företag/BRF' : RUT_ARBETEN.some(([id]) => id === val.rutArbete) ? 'Kan gälla' : val.rutArbete === 'annat' ? 'Gäller inte för valt arbete' : 'Välj arbetstyp') : ({ ja: 'Gäller', nej: 'Gäller inte', kanske: 'Vi återkommer' })[rotFor(val.jobb, val.kundtyp).svar]) : null],
     ['Bilder', bilder.length ? String(bilder.length) : null],
   ];
   const dl = h('dl');
   rows.forEach(([a, b]) => dl.append(h('div', { class: b ? 'on' : '' }, [h('dt', { text: a }), h('dd', { text: b || '–' })])));
   sumEl.append(dl);
+  const est = uppskatta(PRIS, val);
+  if (est) sumEl.append(h('p', { class: 'pg-sum-price' }, [h('small', { text: 'Riktpris' }), h('b', { text: kr(est.fran) + ' – ' + kr(est.till) })]));
   const next = !val.jobb ? 1 : !val.underlag ? 2 : steps[4].box.classList.contains('locked') ? 3 : 5;
   sumEl.append(h('a', { class: 'btn btn-gold pg-sum-go', href: '#pg-h' + next, onclick: e => { e.preventDefault(); go(next); } }, [next === 5 ? 'Skicka med bilder' : 'Fortsätt till steg ' + next]));
 }
