@@ -3,7 +3,7 @@
 //
 // Riktpriserna används direkt på hemsidan. Material visas separat i offerten.
 // ROT facts (Skatteverket, checked 19/10-2026): 30 % of the labour cost (incl. VAT), max 50 000 kr per person and year,
-// material and travel give no deduction, laying stone/slabs directly on the ground and walls give no ROT.
+// material and travel give no deduction, outdoor paving and garden walls give no ROT.
 
 export const ROT = { andel: 0.30, maxPerPerson: 50000 };
 
@@ -67,6 +67,18 @@ export const JOBB = [
     ],
   },
   {
+    id: 'kakel', namn: 'Kakel & klinker inomhus', kort: 'Plattsättning i badrum, kök eller hall', bild: 'fiskbensgolv',
+    enhet: '', enhetLang: '', rot: 'inne', storlekar: [],
+    delar: ['Badrum', 'Kök', 'Hall'],
+    underlag: [{ id: 'renovering', t: 'Renovering inomhus', s: 'ROT kan gälla för arbetskostnaden när villkoren är uppfyllda.', ikon: 'plattor' }],
+  },
+  {
+    id: 'murninghus', namn: 'Murning på bostadshuset', kort: 'Fasad, skorsten eller husets stomme', bild: 'gula-huset',
+    enhet: '', enhetLang: '', rot: 'smahus', storlekar: [],
+    delar: ['Fasad', 'Skorsten', 'Husets stomme', 'Ombyggnad eller tillbyggnad'],
+    underlag: [{ id: 'hus', t: 'Murningsarbete på bostadshuset', s: 'ROT kan gälla för arbetskostnaden när villkoren är uppfyllda.', ikon: 'plattor' }],
+  },
+  {
     id: 'service', namn: 'Fastighetsservice & trädgård', kort: 'Löpande skötsel, underhåll och praktisk hjälp', bild: 'hackplantering',
     enhet: '', enhetLang: '', rot: 'varierar',
     storlekar: [],
@@ -109,6 +121,8 @@ export function rotFor(jobbId, kundtyp) {
   if (j.rot === 'nej') return { svar: 'nej', varfor: 'Att lägga sten och plattor direkt på mark eller bygga murar ger enligt Skatteverket inget ROT-avdrag.' };
   if (j.rot === 'varierar') return { svar: 'kanske', varfor: 'Det beror på jobbet. Vi berättar i offerten om ROT- eller RUT-avdrag gäller.' };
   if (kundtyp === 'bostadsratt' && j.rot === 'smahus') return { svar: 'nej', varfor: 'I en bostadsrätt gäller ROT bara arbete inne i lägenheten. Fasaden sköts av föreningen.' };
+  if (j.id === 'kakel') return { svar: 'ja', varfor: 'Kakel eller klinker inomhus vid renovering kan ge ROT. Avdraget gäller bara arbetskostnaden och Skatteverkets villkor måste vara uppfyllda.' };
+  if (j.id === 'murninghus') return { svar: 'ja', varfor: 'Murningsarbete på bostadshuset kan ge ROT. Avdraget gäller bara arbetskostnaden och Skatteverkets villkor måste vara uppfyllda.' };
   return { svar: 'ja', varfor: 'Målning, gipsning och golvläggning i bostaden är ROT-arbete. Avdraget är 30 procent av arbetskostnaden.' };
 }
 

@@ -248,13 +248,15 @@ function renderResultat() {
       rc.append(h('div', { class: 'pg-rot-calc' }, [h('label', { for: 'pg-rut-timmar', text: 'Ungefär hur många arbetstimmar?' }), h('div', { class: 'pg-numrow' }, [hours, h('span', { class: 'pg-unit', text: 'tim' })]), out]));
       calculate();
     }
-    b.append(rc);
+    // Visa timpris och preliminärt belopp att betala direkt över riktpriset.
+    b.prepend(rc);
     return;
   }
   // Behåll ROT-räknaren för övriga jobb.
   const rot = rotFor(val.jobb, val.kundtyp);
   const rc = h('div', { class: 'pg-rot pg-rot-' + rot.svar });
-  rc.append(h('div', { class: 'pg-rot-head' }, [h('span', { class: 'pg-rot-badge', text: rot.svar === 'ja' ? 'ROT-avdrag gäller' : rot.svar === 'nej' ? 'Inget ROT-avdrag' : 'ROT kan gälla' }), h('p', { text: rot.varfor })]));
+  const villkoratROT = ['kakel', 'murninghus'].includes(val.jobb);
+  rc.append(h('div', { class: 'pg-rot-head' }, [h('span', { class: 'pg-rot-badge', text: rot.svar === 'ja' && !villkoratROT ? 'ROT-avdrag gäller' : rot.svar === 'nej' ? 'Inget ROT-avdrag' : 'ROT kan gälla' }), h('p', { text: rot.varfor })]));
   if (rot.svar !== 'nej') {
     const p = PRIS.jobb && PRIS.jobb[val.jobb];
     const start = est && p && p.arbete > 0 ? Math.round(((est.fran + est.till) / 2) * p.arbete / 100) : '';
@@ -446,18 +448,21 @@ function update() {
   const j = findJobb(val.jobb), u = j && j.underlag.find(x => x.id === val.underlag), k = KUNDTYP.find(x => x.id === val.kundtyp);
   clear(sumEl);
   sumEl.append(h('p', { class: 'pg-sum-t', text: 'Det här får Målagården' }));
+  const est = uppskatta(PRIS, val);
+  if (est) {
+    const payable = est.rot || est;
+    sumEl.append(h('p', { class: 'pg-sum-price' }, [h('small', { text: 'Ungefärligt pris att betala' }), h('b', { text: kr(payable.fran) + ' – ' + kr(payable.till) })]));
+  }
   const rows = [
     ['Jobb', j ? j.namn : null], ['Underlag', u ? u.t : val.underlag === 'vetej' ? 'Vet inte, bedöms från bilder' : null],
     ['Gäller', val.delar.length ? val.delar.join(', ') : null],
     ['Storlek', j && j.enhet ? (val.vetEj ? 'Mäts på plats' : Number(val.storlek) > 0 ? `${Number(val.storlek)} ${j.enhetLang}` : null) : (val.beskrivning ? 'Beskrivning finns' : null)],
-    ['Kund', k ? k.t : null], [val.jobb === 'service' && val.delar.includes('Trädgård') ? 'RUT' : 'ROT', val.jobb && val.kundtyp ? (val.jobb === 'service' && val.delar.includes('Trädgård') ? (val.kundtyp === 'foretag' ? 'Gäller inte för företag/BRF' : RUT_ARBETEN.some(([id]) => id === val.rutArbete) ? 'Kan gälla' : val.rutArbete === 'annat' ? 'Gäller inte för valt arbete' : 'Välj arbetstyp') : ({ ja: 'Gäller', nej: 'Gäller inte', kanske: 'Vi återkommer' })[rotFor(val.jobb, val.kundtyp).svar]) : null],
+    ['Kund', k ? k.t : null], [val.jobb === 'service' && val.delar.includes('Trädgård') ? 'RUT' : 'ROT', val.jobb && val.kundtyp ? (val.jobb === 'service' && val.delar.includes('Trädgård') ? (val.kundtyp === 'foretag' ? 'Gäller inte för företag/BRF' : RUT_ARBETEN.some(([id]) => id === val.rutArbete) ? 'Kan gälla' : val.rutArbete === 'annat' ? 'Gäller inte för valt arbete' : 'Välj arbetstyp') : ['kakel', 'murninghus'].includes(val.jobb) && rotFor(val.jobb, val.kundtyp).svar === 'ja' ? 'Kan gälla' : ({ ja: 'Gäller', nej: 'Gäller inte', kanske: 'Vi återkommer' })[rotFor(val.jobb, val.kundtyp).svar]) : null],
     ['Bilder', bilder.length ? String(bilder.length) : null],
   ];
   const dl = h('dl');
   rows.forEach(([a, b]) => dl.append(h('div', { class: b ? 'on' : '' }, [h('dt', { text: a }), h('dd', { text: b || '–' })])));
   sumEl.append(dl);
-  const est = uppskatta(PRIS, val);
-  if (est) sumEl.append(h('p', { class: 'pg-sum-price' }, [h('small', { text: 'Riktpris' }), h('b', { text: kr(est.fran) + ' – ' + kr(est.till) })]));
   const next = !val.jobb ? 1 : !val.underlag ? 2 : steps[4].box.classList.contains('locked') ? 3 : 5;
   sumEl.append(h('a', { class: 'btn btn-gold pg-sum-go', href: '#pg-h' + next, onclick: e => { e.preventDefault(); go(next); } }, [next === 5 ? 'Skicka med bilder' : 'Fortsätt till steg ' + next]));
 }
