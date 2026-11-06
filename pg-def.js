@@ -68,11 +68,6 @@ export const JOBB = [
   },
   {
   },
-  {
-    id: 'murninghus', namn: 'Murning på bostadshuset', kort: 'Fasad, skorsten eller husets stomme', bild: 'gula-huset',
-    enhet: '', enhetLang: '', rot: 'smahus', storlekar: [],
-    delar: ['Fasad', 'Skorsten', 'Husets stomme', 'Ombyggnad eller tillbyggnad'],
-    underlag: [{ id: 'hus', t: 'Murningsarbete på bostadshuset', s: 'ROT kan gälla för arbetskostnaden när villkoren är uppfyllda.', ikon: 'plattor' }],
   },
   {
     id: 'service', namn: 'Fastighetsservice & trädgård', kort: 'Löpande skötsel, underhåll och praktisk hjälp', bild: 'hackplantering',
