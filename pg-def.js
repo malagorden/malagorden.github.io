@@ -67,9 +67,6 @@ export const JOBB = [
     ],
   },
   {
-  },
-  },
-  {
     id: 'service', namn: 'Fastighetsservice & trädgård', kort: 'Löpande skötsel, underhåll och praktisk hjälp', bild: 'hackplantering',
     enhet: '', enhetLang: '', rot: 'varierar',
     storlekar: [],
